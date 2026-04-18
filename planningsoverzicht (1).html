@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planningsoverzicht</title>
+
+<!--
+════════════════════════════════════════════════════════════════════════
+  SETUP — vul deze drie waarden in voordat je het bestand uploadt
+════════════════════════════════════════════════════════════════════════
+  CLIENT_ID      → Azure AD App Registration client ID (zie README)
+  SHAREPOINT_HOST → jouw SharePoint domein, bijv. bedrijf.sharepoint.com
+  SITE_NAME      → naam van jouw site, bijv. planning
+  DRIVE_PATH     → pad naar de Excel in de documentbibliotheek
+                   bijv. /sites/planning/Gedeelde documenten/planningdata.xlsx
+════════════════════════════════════════════════════════════════════════
+-->
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Literata:opsz,wght@7..72,300..700&display=swap" rel="stylesheet">
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --paper: #f5f2ed;
+    --sidebar-bg: #1e2530;
+    --sidebar-text: #c8c4bc;
+    --accent: #c8612a;
+    --rule: #d4cfc8;
+    --holiday-bg: #fef3e2;
+    --weekend-bg: #edeae5;
+    --today-bg: #1e2530;
+    --nav-hover: #2d3545;
+    --danger: #c0392b;
+    --success: #3a7d44;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Literata', Georgia, serif;
+    background: var(--paper);
+    color: var(--ink);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: 224px; min-width: 224px;
+    background: var(--sidebar-bg);
+    display: flex; flex-direction: column;
+  }
+  .sb-logo { padding: 26px 22px 18px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .sb-logo h1 { font-family: 'DM Serif Display', serif; font-size: 1.05rem; color: #fff; line-height: 1.3; }
+  .sb-logo span { display: block; font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--accent); letter-spacing: 0.14em; text-transform: uppercase; margin-top: 4px; }
+
+  nav { flex: 1; padding: 14px 0; }
+  nav a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 22px;
+    color: var(--sidebar-text);
+    font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.07em; text-transform: uppercase;
+    cursor: pointer; border-left: 3px solid transparent;
+    transition: background 0.13s, color 0.13s, border-color 0.13s;
+    text-decoration: none;
+  }
+  nav a svg { opacity: 0.55; flex-shrink: 0; }
+  nav a:hover, nav a.active { background: var(--nav-hover); color: #fff; border-left-color: var(--accent); }
+  nav a.active svg, nav a:hover svg { opacity: 1; }
+
+  .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 17px; height: 17px; border-radius: 9px;
+    background: var(--accent); color: #fff;
+    font-size: 0.55rem; padding: 0 4px; margin-left: auto;
+  }
+
+  .sb-footer {
+    padding: 14px 22px; border-top: 1px solid rgba(255,255,255,0.07);
+    font-family: 'DM Mono', monospace; font-size: 0.58rem;
+    color: rgba(200,196,188,0.45);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex-shrink: 0; transition: background 0.3s; }
+  .sync-dot.busy { background: #c8952a; }
+  .sync-dot.err  { background: var(--danger); }
+
+  /* ── MAIN ── */
+  #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .page { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  .page.active { display: flex; }
+
+  .topbar {
+    padding: 18px 32px 14px; border-bottom: 1px solid var(--rule);
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0; background: var(--paper);
+  }
+  .topbar h2 { font-family: 'DM Serif Display', serif; font-size: 1.4rem; flex: 1; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: 'DM Mono', monospace; font-size: 0.65rem;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    padding: 6px 14px; border: 1px solid var(--rule); border-radius: 4px;
+    background: transparent; color: var(--ink); cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .btn.primary { background: var(--sidebar-bg); color: #fff; border-color: var(--sidebar-bg); }
+  .btn.primary:hover { background: var(--accent); border-color: var(--accent); }
+  .btn.danger { color: var(--danger); border-color: var(--rule); }
+  .btn.danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+  /* ── ALERT BANNER ── */
+  .alert { display: none; margin: 14px 32px 0; padding: 11px 16px; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 0.7rem; line-height: 1.55; }
+  .alert.warn { display: block; background: #fff8e6; color: #9a6200; border: 1px solid #f5d78a; }
+  .alert.err  { display: block; background: #fde8e8; color: var(--danger); border: 1px solid #f5b8b8; }
+  .alert.ok   { display: block; background: #eaf3e0; color: var(--success); border: 1px solid #a8d8a8; }
+  .alert strong { display: block; margin-bottom: 3px; font-weight: 500; }
+
+  /* ── LOGIN SCREEN ── */
+  #login-screen {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 16px;
+    padding: 40px;
+  }
+  #login-screen h2 { font-family: 'DM Serif Display', serif; font-size: 1.6rem; }
+  #login-screen p  { font-size: 0.85rem; color: #777; text-align: center; max-width: 340px; line-height: 1.6; }
+
+  /* ── CALENDAR ── */
+  .cal-scroll { flex: 1; overflow-y: auto; padding: 20px 32px 32px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); border-left: 1px solid var(--rule); border-top: 1px solid var(--rule); }
+  .cal-dh { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: #999; padding: 7px 8px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .cal-cell { border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); min-height: 82px; padding: 7px 8px; background: var(--paper); }
+  .cal-cell.wknd  { background: var(--weekend-bg); }
+  .cal-cell.dim   { opacity: 0.35; }
+  .cal-cell.today { background: var(--today-bg); }
+  .cal-cell.hday  { background: var(--holiday-bg); }
+  .cal-dn { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: #999; margin-bottom: 3px; }
+  .cal-cell.today .cal-dn { color: #fff; }
+  .htag { display: block; font-family: 'DM Mono', monospace; font-size: 0.58rem; background: var(--accent); color: #fff; border-radius: 2px; padding: 2px 5px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+  /* ── HOLIDAYS PAGE ── */
+  .page-content { flex: 1; overflow-y: auto; padding: 22px 32px 36px; }
+  .sec-label { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
+  .form-row { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 26px; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.09em; text-transform: uppercase; color: #888; }
+  .field input { font-family: 'DM Mono', monospace; font-size: 0.78rem; padding: 7px 11px; border: 1px solid var(--rule); border-radius: 4px; background: #fff; color: var(--ink); outline: none; transition: border-color 0.14s; }
+  .field input:focus { border-color: var(--accent); }
+
+  .htable { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .htable thead th { font-family: 'DM Mono', monospace; font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: #999; padding: 7px 11px; text-align: left; border-bottom: 1px solid var(--rule); }
+  .htable tbody tr { border-bottom: 1px solid var(--rule); transition: background 0.1s; }
+  .htable tbody tr:hover { background: #eeebe6; }
+  .htable td { padding: 9px 11px; vertical-align: middle; }
+  .htable td:first-child { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: #777; white-space: nowrap; }
+  .wdot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-right: 8px; }
+  .empty { padding: 36px 0; text-align: center; font-family: 'DM Mono', monospace; font-size: 0.7rem; color: #bbb; }
+
+  /* ── CONFIG OVERLAY ── */
+  #cfg-overlay { position: fixed; inset: 0; background: rgba(20,22,28,0.7); display: none; align-items: center; justify-content: center; z-index: 200; }
+  #cfg-box { background: var(--paper); border-radius: 8px; padding: 32px 36px; max-width: 540px; width: 90%; }
+  #cfg-box h3 { font-family: 'DM Serif Display', serif; font-size: 1.2rem; margin-bottom: 10px; }
+  #cfg-box p  { font-size: 0.82rem; color: #666; line-height: 1.65; margin-bottom: 14px; }
+  #cfg-box code { font-family: 'DM Mono', monospace; font-size: 0.72rem; background: #e8e4de; padding: 2px 6px; border-radius: 3px; }
+  .cfg-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  .cfg-field label { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.09em; text-transform: uppercase; color: #888; }
+  .cfg-field input { font-family: 'DM Mono', monospace; font-size: 0.78rem; padding: 7px 11px; border: 1px solid var(--rule); border-radius: 4px; background: #fff; color: var(--ink); outline: none; width: 100%; }
+  .cfg-field input:focus { border-color: var(--accent); }
+  .cfg-row { display: flex; gap: 10px; margin-top: 16px; }
+
+  /* ── TOAST ── */
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--sidebar-bg); color: #fff; font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 10px 18px; border-radius: 4px; border-left: 3px solid var(--accent); opacity: 0; transform: translateY(6px); transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 300; }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- CONFIG OVERLAY -->
+<div id="cfg-overlay">
+  <div id="cfg-box">
+    <h3>Configuratie</h3>
+    <p>Vul de gegevens in uit jouw Azure AD App Registration en SharePoint omgeving. Zie het README-commentaar onderaan dit bestand voor stap-voor-stap uitleg.</p>
+    <div class="cfg-field"><label>Azure AD Client ID</label><input id="cfg-client-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>
+    <div class="cfg-field"><label>SharePoint host</label><input id="cfg-sp-host" placeholder="bedrijf.sharepoint.com"></div>
+    <div class="cfg-field"><label>Pad naar Excel-bestand</label><input id="cfg-drive-path" placeholder="/sites/planning/Gedeelde documenten/planningdata.xlsx"></div>
+    <div class="cfg-row">
+      <button class="btn primary" onclick="saveConfig()">Opslaan &amp; verbinden</button>
+      <button class="btn" onclick="closeCfg()">Annuleren</button>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="sb-logo">
+    <h1>Plannings&shy;overzicht</h1>
+    <span>Microsoft 365 · v1.0</span>
+  </div>
+  <nav>
+    <a class="active" onclick="showPage('calendar',this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+      Kalender
+    </a>
+    <a onclick="showPage('holidays',this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+      Feestdagen
+      <span class="badge" id="badge">0</span>
+    </a>
+    <a onclick="openCfg()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Instellingen
+    </a>
+    <a onclick="signOut()" id="nav-signout" style="display:none">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Uitloggen
+    </a>
+  </nav>
+  <div class="sb-footer">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-text">Initialiseren…</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="alert" id="alert-banner"></div>
+
+  <!-- LOGIN -->
+  <div class="page active" id="page-login">
+    <div id="login-screen">
+      <h2>Planningsoverzicht</h2>
+      <p>Log in met jouw Microsoft 365 account om de gedeelde planning te openen.</p>
+      <button class="btn primary" onclick="signIn()" style="padding:10px 28px;font-size:0.75rem">
+        Inloggen met Microsoft
+      </button>
+    </div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div class="page" id="page-calendar">
+    <div class="topbar">
+      <h2 id="cal-title"></h2>
+      <button class="btn" onclick="goToday()">Vandaag</button>
+      <button class="btn" onclick="changeMonth(-1)">&#8592;</button>
+      <button class="btn" onclick="changeMonth(1)">&#8594;</button>
+    </div>
+    <div class="cal-scroll">
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+  </div>
+
+  <!-- FEESTDAGEN -->
+  <div class="page" id="page-holidays">
+    <div class="topbar">
+      <h2>Nationale feestdagen</h2>
+      <button class="btn" onclick="loadHolidays()">&#8635; Vernieuwen</button>
+    </div>
+    <div class="page-content">
+      <div class="sec-label">Feestdag toevoegen</div>
+      <div class="form-row">
+        <div class="field"><label>Datum</label><input type="date" id="hol-date"></div>
+        <div class="field"><label>Naam feestdag</label><input type="text" id="hol-name" placeholder="bijv. Koningsdag" style="min-width:210px"></div>
+        <button class="btn primary" onclick="addHoliday()">+ Toevoegen</button>
+      </div>
+      <div class="sec-label" style="margin-bottom:14px">Overzicht</div>
+      <table class="htable">
+        <thead><tr><th>Datum</th><th>Feestdag</th><th>Dag</th><th></th></tr></thead>
+        <tbody id="htbody"></tbody>
+      </table>
+      <div class="empty" id="hempty" style="display:none">Nog geen feestdagen ingevoerd.</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+//  CONFIG — stored in localStorage, editable via Instellingen
+// ══════════════════════════════════════════════════════════════════
+function getCfg() {
+  return {
+    clientId:  localStorage.getItem('po_client_id')  || '',
+    spHost:    localStorage.getItem('po_sp_host')    || '',
+    drivePath: localStorage.getItem('po_drive_path') || '',
+  };
+}
+function saveConfig() {
+  const clientId  = document.getElementById('cfg-client-id').value.trim();
+  const spHost    = document.getElementById('cfg-sp-host').value.trim().replace(/\/$/, '');
+  const drivePath = document.getElementById('cfg-drive-path').value.trim();
+  if (!clientId || !spHost || !drivePath) { toast('Vul alle velden in.'); return; }
+  localStorage.setItem('po_client_id',  clientId);
+  localStorage.setItem('po_sp_host',    spHost);
+  localStorage.setItem('po_drive_path', drivePath);
+  closeCfg();
+  initMsal();
+}
+function openCfg() {
+  const c = getCfg();
+  document.getElementById('cfg-client-id').value  = c.clientId;
+  document.getElementById('cfg-sp-host').value    = c.spHost;
+  document.getElementById('cfg-drive-path').value = c.drivePath;
+  document.getElementById('cfg-overlay').style.display = 'flex';
+}
+function closeCfg() { document.getElementById('cfg-overlay').style.display = 'none'; }
+
+// ══════════════════════════════════════════════════════════════════
+//  MSAL — Microsoft Authentication Library
+// ══════════════════════════════════════════════════════════════════
+let msalInstance = null;
+let accessToken  = null;
+
+function initMsal() {
+  const cfg = getCfg();
+  if (!cfg.clientId || !cfg.spHost) {
+    setSyncStatus('err', 'Niet geconfigureerd');
+    showBanner('warn', 'Configuratie ontbreekt', ' Klik op "Instellingen" om de app te configureren.');
+    openCfg();
+    return;
+  }
+
+  msalInstance = new msal.PublicClientApplication({
+    auth: {
+      clientId: cfg.clientId,
+      authority: 'https://login.microsoftonline.com/common',
+      redirectUri: window.location.href.split('?')[0].split('#')[0],
+    },
+    cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true }
+  });
+
+  msalInstance.handleRedirectPromise().then(resp => {
+    if (resp) accessToken = resp.accessToken;
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+      msalInstance.setActiveAccount(accounts[0]);
+      onSignedIn();
+    } else {
+      showPage('login', null);
+      setSyncStatus('err', 'Niet ingelogd');
+    }
+  }).catch(e => {
+    setSyncStatus('err', 'Auth fout');
+    showBanner('err', 'Inlogfout', ' ' + e.message);
+  });
+}
+
+async function getToken() {
+  const cfg = getCfg();
+  const scopes = [`https://${cfg.spHost}/AllSites.Write`, 'User.Read'];
+  try {
+    const resp = await msalInstance.acquireTokenSilent({ scopes, account: msalInstance.getActiveAccount() });
+    return resp.accessToken;
+  } catch (e) {
+    const resp = await msalInstance.acquireTokenPopup({ scopes });
+    return resp.accessToken;
+  }
+}
+
+function signIn() {
+  const cfg = getCfg();
+  msalInstance.loginRedirect({ scopes: [`https://${cfg.spHost}/AllSites.Write`, 'User.Read'] });
+}
+
+function signOut() {
+  msalInstance.logoutRedirect();
+}
+
+function onSignedIn() {
+  const acct = msalInstance.getActiveAccount();
+  document.getElementById('nav-signout').style.display = 'flex';
+  setSyncStatus('ok', acct ? acct.name || 'Ingelogd' : 'Ingelogd');
+  hideBanner();
+  showPage('calendar', document.querySelector('nav a'));
+  loadHolidays();
+  setInterval(loadHolidays, 60000);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  GRAPH API — Excel on SharePoint
+// ══════════════════════════════════════════════════════════════════
+// Excel file structure expected:
+//   Sheet name: Feestdagen
+//   Columns:    A=Datum (YYYY-MM-DD)  B=Naam
+//   Row 1:      headers
+//   Row 2+:     data
+
+async function graphRequest(method, path, body) {
+  const token = await getToken();
+  const opts = {
+    method,
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch('https://graph.microsoft.com/v1.0' + path, opts);
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({ error: { message: r.statusText } }));
+    throw new Error((err.error && err.error.message) || ('HTTP ' + r.status));
+  }
+  return r.status === 204 ? null : r.json();
+}
+
+function driveItemPath() {
+  const cfg = getCfg();
+  // Encode path for Graph API: /drives/root:/path/to/file.xlsx
+  return `/me/drive/root:${cfg.drivePath}`;
+}
+
+async function getExcelSessionId() {
+  // Use a persistent session for read/write
+  const path = driveItemPath();
+  const data = await graphRequest('POST', `${path}:/workbook/createSession`, { persistChanges: true });
+  return data.id;
+}
+
+let _sessionId = null;
+async function getSession() {
+  if (_sessionId) return _sessionId;
+  _sessionId = await getExcelSessionId();
+  return _sessionId;
+}
+
+async function excelGet(endpoint) {
+  const sessionId = await getSession();
+  const token = await getToken();
+  const path = driveItemPath();
+  const r = await fetch(`https://graph.microsoft.com/v1.0${path}:/workbook${endpoint}`, {
+    headers: { 'Authorization': 'Bearer ' + token, 'workbook-session-id': sessionId }
+  });
+  if (!r.ok) {
+    _sessionId = null; // reset session on error
+    const err = await r.json().catch(() => ({ error: { message: r.statusText } }));
+    throw new Error((err.error && err.error.message) || ('HTTP ' + r.status));
+  }
+  return r.json();
+}
+
+async function excelPatch(endpoint, body) {
+  const sessionId = await getSession();
+  const token = await getToken();
+  const path = driveItemPath();
+  const r = await fetch(`https://graph.microsoft.com/v1.0${path}:/workbook${endpoint}`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json',
+      'workbook-session-id': sessionId
+    },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) {
+    _sessionId = null;
+    const err = await r.json().catch(() => ({ error: { message: r.statusText } }));
+    throw new Error((err.error && err.error.message) || ('HTTP ' + r.status));
+  }
+  return r.status === 204 ? null : r.json();
+}
+
+// ── read all holidays from Excel ──────────────────────────────────
+async function loadHolidays() {
+  setSyncStatus('busy', 'Laden…');
+  try {
+    // Read used range on sheet Feestdagen
+    const data = await excelGet(`/worksheets/Feestdagen/usedRange`);
+    const rows = data.values || [];
+
+    // Skip header row, map remaining rows
+    holidays = rows.slice(1)
+      .filter(r => r[0] && r[1])
+      .map((r, i) => ({
+        row: i + 2, // 1-indexed, +1 for header
+        date: String(r[0]).slice(0, 10),
+        name: String(r[1])
+      }))
+      .filter(h => /^\d{4}-\d{2}-\d{2}$/.test(h.date))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    if (holidays.length === 0) {
+      await seedDefaultHolidays();
+      return;
+    }
+
+    setSyncStatus('ok', 'Gesynchroniseerd');
+    hideBanner();
+  } catch (e) {
+    setSyncStatus('err', 'Fout');
+    showBanner('err', 'Kan Excel niet laden', ' ' + e.message +
+      ' — Controleer of het bestand bestaat en de sheet "Feestdagen" aanwezig is.');
+  }
+  renderCalendar();
+  renderHolidayTable();
+  updateBadge();
+}
+
+// ── write a new row ───────────────────────────────────────────────
+async function addHoliday() {
+  const date = document.getElementById('hol-date').value;
+  const name = document.getElementById('hol-name').value.trim();
+  if (!date || !name) { toast('Vul datum en naam in.'); return; }
+  if (holidays.find(h => h.date === date)) { toast('Er staat al een feestdag op deze datum.'); return; }
+
+  setSyncStatus('busy', 'Opslaan…');
+  try {
+    // Append a row after the last used row
+    const nextRow = holidays.length + 2; // +1 header, +1 next
+    await excelPatch(`/worksheets/Feestdagen/range(address='A${nextRow}:B${nextRow}')`, {
+      values: [[date, name]]
+    });
+    document.getElementById('hol-date').value = '';
+    document.getElementById('hol-name').value = '';
+    await loadHolidays();
+    setSyncStatus('ok', 'Opgeslagen');
+    toast('Toegevoegd: ' + name);
+  } catch (e) {
+    setSyncStatus('err', 'Fout bij opslaan');
+    toast('Fout: ' + e.message);
+  }
+}
+
+// ── delete a row by clearing it, then reload ──────────────────────
+async function deleteHoliday(rowIndex) {
+  if (!confirm('Feestdag verwijderen?')) return;
+  setSyncStatus('busy', 'Verwijderen…');
+  try {
+    // Delete the row by shifting cells up
+    await excelPatch(`/worksheets/Feestdagen/range(address='A${rowIndex}:B${rowIndex}')/delete`, {});
+    await loadHolidays();
+    setSyncStatus('ok', 'Verwijderd');
+    toast('Feestdag verwijderd');
+  } catch (e) {
+    // Fallback: clear the row instead
+    try {
+      await excelPatch(`/worksheets/Feestdagen/range(address='A${rowIndex}:B${rowIndex}')`, {
+        values: [['', '']]
+      });
+      await loadHolidays();
+      setSyncStatus('ok', 'Verwijderd');
+      toast('Feestdag verwijderd');
+    } catch (e2) {
+      setSyncStatus('err', 'Fout bij verwijderen');
+      toast('Fout: ' + e2.message);
+    }
+  }
+}
+
+// ── seed default Dutch holidays on empty sheet ────────────────────
+const DEFAULT_HOLIDAYS = [
+  ['2025-01-01','Nieuwjaarsdag'],['2025-04-18','Goede Vrijdag'],
+  ['2025-04-20','Eerste Paasdag'],['2025-04-21','Tweede Paasdag'],
+  ['2025-04-27','Koningsdag'],['2025-05-05','Bevrijdingsdag'],
+  ['2025-05-29','Hemelvaartsdag'],['2025-06-08','Eerste Pinksterdag'],
+  ['2025-06-09','Tweede Pinksterdag'],['2025-12-25','Eerste Kerstdag'],
+  ['2025-12-26','Tweede Kerstdag'],['2026-01-01','Nieuwjaarsdag'],
+  ['2026-04-03','Goede Vrijdag'],['2026-04-05','Eerste Paasdag'],
+  ['2026-04-06','Tweede Paasdag'],['2026-04-27','Koningsdag'],
+  ['2026-05-05','Bevrijdingsdag'],['2026-05-14','Hemelvaartsdag'],
+  ['2026-05-24','Eerste Pinksterdag'],['2026-05-25','Tweede Pinksterdag'],
+  ['2026-12-25','Eerste Kerstdag'],['2026-12-26','Tweede Kerstdag'],
+];
+
+async function seedDefaultHolidays() {
+  setSyncStatus('busy', 'Standaard feestdagen aanmaken…');
+  try {
+    const values = [['Datum', 'Naam'], ...DEFAULT_HOLIDAYS];
+    const lastRow = values.length;
+    await excelPatch(`/worksheets/Feestdagen/range(address='A1:B${lastRow}')`, { values });
+    await loadHolidays();
+  } catch (e) {
+    setSyncStatus('err', 'Fout bij aanmaken');
+    showBanner('err', 'Kon standaard feestdagen niet aanmaken', ' ' + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  STATE & UI
+// ══════════════════════════════════════════════════════════════════
+let holidays = [];
+let curY, curM;
+const DAYS_NL   = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
+const MONTHS_NL = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
+
+function iso(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function goToday() { const t=new Date(); curY=t.getFullYear(); curM=t.getMonth(); renderCalendar(); }
+function changeMonth(d) { curM+=d; if(curM<0){curM=11;curY--;} if(curM>11){curM=0;curY++;} renderCalendar(); }
+
+function renderCalendar() {
+  const grid=document.getElementById('cal-grid');
+  const todayS=iso(new Date());
+  const hm={};
+  holidays.forEach(h=>{ hm[h.date]=h.name; });
+  document.getElementById('cal-title').textContent=MONTHS_NL[curM]+' '+curY;
+  grid.innerHTML='';
+  ['ma','di','wo','do','vr','za','zo'].forEach(d=>{ const el=document.createElement('div'); el.className='cal-dh'; el.textContent=d; grid.appendChild(el); });
+  const first=(new Date(curY,curM,1).getDay()+6)%7;
+  const prevDim=new Date(curY,curM,0).getDate();
+  const daysInM=new Date(curY,curM+1,0).getDate();
+  for(let i=first-1;i>=0;i--) grid.appendChild(makeCell(new Date(curY,curM-1,prevDim-i),todayS,hm,true));
+  for(let d=1;d<=daysInM;d++) grid.appendChild(makeCell(new Date(curY,curM,d),todayS,hm,false));
+  const filled=grid.children.length-7;
+  const rem=(7-(filled%7))%7;
+  for(let d=1;d<=rem;d++) grid.appendChild(makeCell(new Date(curY,curM+1,d),todayS,hm,true));
+}
+
+function makeCell(date,todayS,hm,dim) {
+  const c=document.createElement('div');
+  const dow=date.getDay();
+  const ds=iso(date);
+  const hol=hm[ds];
+  let cls='cal-cell';
+  if(dow===0||dow===6) cls+=' wknd';
+  if(dim) cls+=' dim';
+  if(ds===todayS) cls+=' today';
+  if(hol&&!dim) cls+=' hday';
+  c.className=cls;
+  const dn=document.createElement('div'); dn.className='cal-dn'; dn.textContent=date.getDate(); c.appendChild(dn);
+  if(hol&&!dim){ const t=document.createElement('span'); t.className='htag'; t.textContent=hol; t.title=hol; c.appendChild(t); }
+  return c;
+}
+
+function renderHolidayTable() {
+  const tbody=document.getElementById('htbody');
+  const empty=document.getElementById('hempty');
+  tbody.innerHTML='';
+  if(holidays.length===0){ empty.style.display='block'; return; }
+  empty.style.display='none';
+  holidays.forEach(h=>{
+    const d=new Date(h.date+'T00:00:00');
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${h.date}</td><td><span class="wdot"></span>${esc(h.name)}</td><td style="font-family:'DM Mono',monospace;font-size:0.68rem;color:#999">${DAYS_NL[d.getDay()]}</td><td style="text-align:right"><button class="btn danger" onclick="deleteHoliday(${h.row})">Verwijder</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateBadge() { document.getElementById('badge').textContent=holidays.length; }
+
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+}
+
+function setSyncStatus(state, msg) {
+  const dot=document.getElementById('sync-dot');
+  dot.className='sync-dot'+(state==='busy'?' busy':state==='err'?' err':'');
+  document.getElementById('sync-text').textContent=msg;
+}
+function showBanner(type,title,body) {
+  const b=document.getElementById('alert-banner');
+  b.className='alert '+type;
+  b.innerHTML=(title?'<strong>'+esc(title)+'</strong>':'')+esc(body);
+}
+function hideBanner() { document.getElementById('alert-banner').className='alert'; }
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+let _tt;
+function toast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ── init ──────────────────────────────────────────────────────────
+const _now=new Date(); curY=_now.getFullYear(); curM=_now.getMonth();
+renderCalendar();
+initMsal();
+</script>
+
+<!--
+════════════════════════════════════════════════════════════════════════
+  README — COMPLETE SETUP INSTRUCTIES
+════════════════════════════════════════════════════════════════════════
+
+OVERZICHT
+─────────
+De app gebruikt de Microsoft Graph API om data te lezen en schrijven
+naar een Excel-bestand op SharePoint. Gebruikers loggen in met hun
+bestaand Microsoft 365-account — geen apart wachtwoord nodig.
+
+De HTML kan gehost worden op GitHub Pages (gratis) en via een Embed
+web part in SharePoint ingevoegd worden.
+
+════════════════════════════════════════════════════════════════════════
+STAP 1 — AZURE AD APP REGISTRATION (eenmalig, ~5 minuten)
+════════════════════════════════════════════════════════════════════════
+1. Ga naar https://portal.azure.com en log in met een admin account.
+2. Zoek "App registrations" → klik "New registration".
+3. Naam: Planningsoverzicht (of naar keuze)
+4. Supported account types: "Accounts in this organizational directory only"
+5. Redirect URI:
+     Type: Single-page application (SPA)
+     URL:  de URL waar je HTML wordt gehost (bijv. GitHub Pages URL)
+           Als je twijfelt, voeg je later nog een URI toe.
+6. Klik "Register".
+7. Kopieer de "Application (client) ID" — die heb je nodig in de app.
+
+8. Ga naar "API permissions" → "Add a permission" → "SharePoint":
+     Kies: Delegated permissions
+     Voeg toe: AllSites.Write
+9. Klik "Grant admin consent" (vereist admin-rechten).
+
+════════════════════════════════════════════════════════════════════════
+STAP 2 — EXCEL-BESTAND AANMAKEN OP SHAREPOINT
+════════════════════════════════════════════════════════════════════════
+1. Ga naar jouw SharePoint-site.
+2. Open een documentbibliotheek (bijv. "Gedeelde documenten").
+3. Maak een nieuw Excel-bestand aan: planningdata.xlsx
+4. Hernoem het eerste tabblad naar: Feestdagen
+5. Zet in cel A1: Datum   en in cel B1: Naam
+6. Sla op. De app vult de rest automatisch in bij eerste gebruik.
+
+Noteer het pad: /sites/SITENAAM/Gedeelde documenten/planningdata.xlsx
+
+════════════════════════════════════════════════════════════════════════
+STAP 3 — HTML HOSTEN OP GITHUB PAGES (gratis)
+════════════════════════════════════════════════════════════════════════
+1. Maak een gratis account aan op https://github.com
+2. Maak een nieuwe repository aan (bijv. "planningsoverzicht")
+   Zet op "Public".
+3. Upload dit HTML-bestand als index.html
+4. Ga naar Settings → Pages → Source: "Deploy from branch" → main → / (root)
+5. Jouw app is nu bereikbaar op:
+   https://JOUWGEBRUIKERSNAAM.github.io/planningsoverzicht/
+
+6. Voeg deze URL toe als Redirect URI in de Azure App Registration:
+   Azure Portal → App registrations → jouw app → Authentication
+   → Add URI → plak de GitHub Pages URL → Save
+
+════════════════════════════════════════════════════════════════════════
+STAP 4 — APP CONFIGUREREN (in de browser)
+════════════════════════════════════════════════════════════════════════
+Open de GitHub Pages URL in de browser. Klik "Instellingen" en vul in:
+
+  Client ID:   de Application ID uit Stap 1 stap 7
+  SP Host:     bedrijf.sharepoint.com
+  Drive path:  /sites/SITENAAM/Gedeelde documenten/planningdata.xlsx
+
+Klik "Opslaan & verbinden" en log in met een Microsoft 365 account.
+
+════════════════════════════════════════════════════════════════════════
+STAP 5 — INSLUITEN IN SHAREPOINT (optioneel)
+════════════════════════════════════════════════════════════════════════
+1. Ga naar een SharePoint-pagina → bewerk de pagina.
+2. Voeg een web part toe: zoek "Insluiten" of "Embed".
+3. Plak de GitHub Pages URL in het URL-veld.
+4. Pas de hoogte aan (minimaal 600px) → publiceer de pagina.
+
+════════════════════════════════════════════════════════════════════════
+PROBLEMEN OPLOSSEN
+════════════════════════════════════════════════════════════════════════
+• "AADSTS50011" → Redirect URI klopt niet. Controleer Stap 3 stap 6.
+• "403 Forbidden" → Admin consent ontbreekt. Zie Stap 1 stap 9.
+• "Excel niet gevonden" → Controleer het pad in Instellingen.
+• Sheet niet gevonden → Hernoem het tabblad in Excel naar "Feestdagen".
+• Inlogvenster verschijnt niet → Popup-blocker uitschakelen voor de site.
+
+════════════════════════════════════════════════════════════════════════
+-->
+</body>
+</html>
