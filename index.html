@@ -7,179 +7,264 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Literata:opsz,wght@7..72,300..700&display=swap" rel="stylesheet">
 <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 <style>
-  :root {
-    --ink: #1a1a1a;
-    --paper: #f5f2ed;
-    --sidebar-bg: #1e2530;
-    --sidebar-text: #c8c4bc;
-    --accent: #c8612a;
-    --rule: #d4cfc8;
-    --weekend-bg: #edeae5;
-    --today-bg: #1e2530;
-    --nav-hover: #2d3545;
-    --danger: #c0392b;
-    --success: #3a7d44;
-    --national-bg: #fef3e2;
-    --national-tag: #c8612a;
-    --school-bg: #e8f0fb;
-    --school-tag: #2a6bc8;
-  }
+:root {
+  --ink:#1a1a1a; --paper:#f5f2ed; --sidebar-bg:#1e2530; --sidebar-text:#c8c4bc;
+  --accent:#c8612a; --rule:#d4cfc8; --weekend-bg:#edeae5;
+  --today-bg:#1e2530; --nav-hover:#2d3545; --danger:#c0392b; --success:#3a7d44;
+  --national-bg:#fef3e2; --national-tag:#c8612a; --school-bg:#e8f0fb; --school-tag:#2a6bc8;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Literata',Georgia,serif;background:var(--paper);color:var(--ink);display:flex;height:100vh;overflow:hidden;}
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── SIDEBAR ── */
+#sidebar{width:224px;min-width:224px;background:var(--sidebar-bg);display:flex;flex-direction:column;overflow-y:auto;}
+.sb-logo{padding:26px 22px 18px;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;}
+.sb-logo h1{font-family:'DM Serif Display',serif;font-size:1.05rem;color:#fff;line-height:1.3;}
+.sb-logo span{display:block;font-family:'DM Mono',monospace;font-size:.6rem;color:var(--accent);letter-spacing:.14em;text-transform:uppercase;margin-top:4px;}
+.sb-nav{flex:1;padding:10px 0 6px;}
+.nav-section-label{font-family:'DM Mono',monospace;font-size:.55rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(200,196,188,.35);padding:10px 22px 4px;margin-top:4px;}
+/* ALL nav items use identical padding — no .top exception */
+.sb-nav a{display:flex;align-items:center;gap:10px;padding:9px 22px;color:var(--sidebar-text);font-family:'DM Mono',monospace;font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border-left:3px solid transparent;transition:background .13s,color .13s,border-color .13s;text-decoration:none;}
+.sb-nav a svg{opacity:.5;flex-shrink:0;}
+.sb-nav a:hover,.sb-nav a.active{background:var(--nav-hover);color:#fff;border-left-color:var(--accent);}
+.sb-nav a.active svg,.sb-nav a:hover svg{opacity:1;}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;border-radius:9px;background:var(--accent);color:#fff;font-size:.55rem;padding:0 4px;margin-left:auto;}
+.sb-footer{padding:14px 22px;border-top:1px solid rgba(255,255,255,.07);font-family:'DM Mono',monospace;font-size:.58rem;color:rgba(200,196,188,.45);display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0;transition:background .3s;}
+.sync-dot.busy{background:#c8952a;} .sync-dot.err{background:var(--danger);}
 
-  body {
-    font-family: 'Literata', Georgia, serif;
-    background: var(--paper);
-    color: var(--ink);
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
-  }
+/* ── MAIN ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.page{display:none;flex-direction:column;flex:1;overflow:hidden;}
+.page.active{display:flex;}
 
-  /* ── SIDEBAR ── */
-  #sidebar { width: 224px; min-width: 224px; background: var(--sidebar-bg); display: flex; flex-direction: column; }
-  .sb-logo { padding: 26px 22px 18px; border-bottom: 1px solid rgba(255,255,255,0.07); }
-  .sb-logo h1 { font-family: 'DM Serif Display', serif; font-size: 1.05rem; color: #fff; line-height: 1.3; }
-  .sb-logo span { display: block; font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--accent); letter-spacing: 0.14em; text-transform: uppercase; margin-top: 4px; }
+/* ── TOPBAR ── */
+.topbar{padding:14px 32px 12px;border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--paper);flex-wrap:wrap;}
+.topbar h2{font-family:'DM Serif Display',serif;font-size:1.4rem;flex:1;min-width:160px;}
 
-  nav { flex: 1; padding: 14px 0; }
-  nav a {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 22px; color: var(--sidebar-text);
-    font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.07em; text-transform: uppercase;
-    cursor: pointer; border-left: 3px solid transparent;
-    transition: background 0.13s, color 0.13s, border-color 0.13s; text-decoration: none;
-  }
-  nav a svg { opacity: 0.55; flex-shrink: 0; }
-  nav a:hover, nav a.active { background: var(--nav-hover); color: #fff; border-left-color: var(--accent); }
-  nav a.active svg, nav a:hover svg { opacity: 1; }
+/* ── CAL NAV ── */
+.cal-nav-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.month-strip{display:flex;gap:3px;}
+.month-btn{font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.04em;text-transform:uppercase;padding:5px 7px;border:1px solid var(--rule);border-radius:3px;background:transparent;color:#888;cursor:pointer;transition:background .1s,color .1s;white-space:nowrap;}
+.month-btn:hover{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+.month-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.year-control{display:flex;align-items:center;border:1px solid var(--rule);border-radius:4px;overflow:hidden;}
+.year-arrow{font-family:'DM Mono',monospace;font-size:.8rem;padding:4px 9px;background:transparent;border:none;color:var(--ink);cursor:pointer;transition:background .1s;line-height:1;}
+.year-arrow:hover{background:var(--ink);color:var(--paper);}
+.year-display{font-family:'DM Mono',monospace;font-size:.78rem;font-weight:500;padding:4px 2px;min-width:46px;text-align:center;border-left:1px solid var(--rule);border-right:1px solid var(--rule);cursor:pointer;user-select:none;}
+.year-display:hover{background:var(--weekend-bg);}
+.year-input{font-family:'DM Mono',monospace;font-size:.78rem;width:56px;padding:4px 6px;border:none;outline:none;text-align:center;background:var(--paper);color:var(--ink);}
+.btn-today{font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.07em;text-transform:uppercase;padding:5px 12px;border:1px solid var(--rule);border-radius:4px;background:transparent;color:var(--ink);cursor:pointer;transition:background .12s;white-space:nowrap;}
+.btn-today:hover{background:var(--sidebar-bg);color:#fff;border-color:var(--sidebar-bg);}
 
-  .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; border-radius: 9px; background: var(--accent); color: #fff; font-size: 0.55rem; padding: 0 4px; margin-left: auto; }
+/* ── BUTTONS ── */
+.btn{font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.07em;text-transform:uppercase;padding:6px 14px;border:1px solid var(--rule);border-radius:4px;background:transparent;color:var(--ink);cursor:pointer;transition:background .12s,border-color .12s,color .12s;white-space:nowrap;}
+.btn:hover{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+.btn.primary{background:var(--sidebar-bg);color:#fff;border-color:var(--sidebar-bg);}
+.btn.primary:hover{background:var(--accent);border-color:var(--accent);}
+.btn.accent{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn.accent:hover{background:#a34e20;border-color:#a34e20;}
+.btn.danger{color:var(--danger);border-color:var(--rule);}
+.btn.danger:hover{background:var(--danger);color:#fff;border-color:var(--danger);}
+.btn.sm{padding:4px 10px;font-size:.6rem;}
 
-  .sb-footer { padding: 14px 22px; border-top: 1px solid rgba(255,255,255,0.07); font-family: 'DM Mono', monospace; font-size: 0.58rem; color: rgba(200,196,188,0.45); display: flex; align-items: center; gap: 6px; }
-  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); flex-shrink: 0; transition: background 0.3s; }
-  .sync-dot.busy { background: #c8952a; }
-  .sync-dot.err  { background: var(--danger); }
+/* ── ALERT ── */
+.alert{display:none;margin:14px 32px 0;padding:11px 16px;border-radius:4px;font-family:'DM Mono',monospace;font-size:.7rem;line-height:1.55;}
+.alert.warn{display:block;background:#fff8e6;color:#9a6200;border:1px solid #f5d78a;}
+.alert.err{display:block;background:#fde8e8;color:var(--danger);border:1px solid #f5b8b8;}
+.alert strong{display:block;margin-bottom:3px;font-weight:500;}
 
-  /* ── MAIN ── */
-  #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-  .page { display: none; flex-direction: column; flex: 1; overflow: hidden; }
-  .page.active { display: flex; }
+/* ── CALENDAR ── */
+.cal-scroll{flex:1;overflow-y:auto;padding:16px 32px 32px;}
+.cal-legend{display:flex;gap:20px;margin-bottom:14px;}
+.leg-item{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:.62rem;color:#888;}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.leg-dot.national{background:var(--national-tag);} .leg-dot.school{background:var(--school-tag);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid var(--rule);border-top:1px solid var(--rule);}
+.cal-dh{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:#999;padding:7px 8px;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);}
+.cal-cell{border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);min-height:80px;padding:7px 8px;background:var(--paper);}
+.cal-cell.wknd{background:var(--weekend-bg);} .cal-cell.dim{opacity:.35;}
+.cal-cell.today{background:var(--today-bg);} .cal-cell.nat-hol{background:var(--national-bg);}
+.cal-cell.sch-hol{background:var(--school-bg);} .cal-cell.both{background:linear-gradient(135deg,var(--national-bg) 50%,var(--school-bg) 50%);}
+.cal-dn{font-family:'DM Mono',monospace;font-size:.7rem;color:#999;margin-bottom:3px;}
+.cal-cell.today .cal-dn{color:#fff;}
+.cal-tag{display:block;font-family:'DM Mono',monospace;font-size:.58rem;border-radius:2px;padding:2px 5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.cal-tag.national{background:var(--national-tag);color:#fff;} .cal-tag.school{background:var(--school-tag);color:#fff;}
 
-  /* ── TOPBAR ── */
-  .topbar { padding: 14px 32px 12px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; gap: 8px; flex-shrink: 0; background: var(--paper); flex-wrap: wrap; }
-  .topbar h2 { font-family: 'DM Serif Display', serif; font-size: 1.4rem; flex: 1; min-width: 160px; }
+/* ── SHARED ── */
+.page-content{flex:1;overflow-y:auto;padding:22px 32px 36px;}
+.sec-label{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.form-row{display:flex;gap:12px;align-items:flex-end;margin-bottom:26px;flex-wrap:wrap;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.09em;text-transform:uppercase;color:#888;}
+.field input,.field select{font-family:'DM Mono',monospace;font-size:.78rem;padding:7px 11px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink);outline:none;transition:border-color .14s;}
+.field input:focus,.field select:focus{border-color:var(--accent);}
+.htable{width:100%;border-collapse:collapse;font-size:.82rem;}
+.htable thead th{font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:#999;padding:7px 11px;text-align:left;border-bottom:1px solid var(--rule);}
+.htable tbody tr{border-bottom:1px solid var(--rule);transition:background .1s;}
+.htable tbody tr:hover{background:#eeebe6;}
+.htable td{padding:9px 11px;vertical-align:middle;}
+.htable td:first-child{font-family:'DM Mono',monospace;font-size:.7rem;color:#777;white-space:nowrap;}
+.tag-pill{display:inline-block;font-family:'DM Mono',monospace;font-size:.58rem;border-radius:2px;padding:2px 7px;color:#fff;}
+.tag-pill.national{background:var(--national-tag);} .tag-pill.school{background:var(--school-tag);}
+.empty{padding:36px 0;text-align:center;font-family:'DM Mono',monospace;font-size:.7rem;color:#bbb;}
 
-  /* ── CALENDAR NAV ── */
-  .cal-nav-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+/* ── LOCATIES ── */
+.location-list{display:flex;flex-direction:column;gap:16px;}
+.location-card{border:1px solid var(--rule);border-radius:6px;overflow:hidden;background:#fff;}
+.location-header{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--paper);border-bottom:1px solid var(--rule);cursor:pointer;user-select:none;}
+.location-header:hover{background:var(--weekend-bg);}
+.location-name{font-family:'DM Serif Display',serif;font-size:1rem;flex:1;}
+.location-meta{font-family:'DM Mono',monospace;font-size:.62rem;color:#999;letter-spacing:.04em;}
+.location-chevron{font-size:.7rem;color:#bbb;transition:transform .18s;flex-shrink:0;}
+.location-card.open .location-chevron{transform:rotate(180deg);}
+.location-body{display:none;padding:16px;}
+.location-card.open .location-body{display:block;}
+.rooms-table{width:100%;border-collapse:collapse;font-size:.8rem;margin-bottom:14px;}
+.rooms-table thead th{font-family:'DM Mono',monospace;font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:#999;padding:5px 10px;text-align:left;border-bottom:1px solid var(--rule);}
+.rooms-table tbody tr{border-bottom:1px solid var(--rule);}
+.rooms-table tbody tr:last-child{border-bottom:none;}
+.rooms-table td{padding:7px 10px;vertical-align:middle;}
+.rooms-table td:first-child{font-family:'DM Mono',monospace;font-size:.68rem;}
+.cap-badge{display:inline-flex;align-items:center;gap:4px;font-family:'DM Mono',monospace;font-size:.62rem;background:var(--weekend-bg);color:#666;padding:2px 8px;border-radius:3px;}
+.add-room-row{display:flex;gap:8px;align-items:flex-end;padding:10px 0 0;border-top:1px dashed var(--rule);flex-wrap:wrap;}
+.add-room-row .field input{font-size:.72rem;padding:5px 9px;}
+.add-room-row .field label{font-size:.58rem;}
 
-  .nav-arrow { font-family: 'DM Mono', monospace; font-size: 0.72rem; padding: 5px 10px; border: 1px solid var(--rule); border-radius: 4px; background: transparent; color: var(--ink); cursor: pointer; transition: background 0.12s, border-color 0.12s, color 0.12s; line-height: 1; }
-  .nav-arrow:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+/* ══════════════════════════════════════════════════
+   DOCENTEN
+══════════════════════════════════════════════════ */
+.search-bar{display:flex;gap:8px;align-items:center;margin-bottom:18px;}
+.search-bar input{font-family:'DM Mono',monospace;font-size:.75rem;padding:7px 12px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink);outline:none;flex:1;max-width:320px;}
+.search-bar input:focus{border-color:var(--accent);}
 
-  /* month picker strip */
-  .month-strip { display: flex; gap: 3px; }
-  .month-btn {
-    font-family: 'DM Mono', monospace; font-size: 0.58rem; letter-spacing: 0.04em; text-transform: uppercase;
-    padding: 5px 7px; border: 1px solid var(--rule); border-radius: 3px;
-    background: transparent; color: #888; cursor: pointer;
-    transition: background 0.1s, color 0.1s, border-color 0.1s;
-    white-space: nowrap;
-  }
-  .month-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-  .month-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.docent-table{width:100%;border-collapse:collapse;}
+.docent-table thead th{font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:#999;padding:7px 12px;text-align:left;border-bottom:1px solid var(--rule);white-space:nowrap;}
+.docent-row{border-bottom:1px solid var(--rule);}
+.docent-row td{padding:0;}
+.docent-main{display:flex;align-items:center;gap:0;cursor:pointer;transition:background .1s;}
+.docent-main:hover{background:#eeebe6;}
+.docent-main td,.docent-cell{padding:10px 12px;vertical-align:middle;}
 
-  /* year control */
-  .year-control { display: flex; align-items: center; gap: 0; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
-  .year-arrow { font-family: 'DM Mono', monospace; font-size: 0.8rem; padding: 4px 9px; background: transparent; border: none; color: var(--ink); cursor: pointer; transition: background 0.1s; line-height: 1; }
-  .year-arrow:hover { background: var(--ink); color: var(--paper); }
-  .year-display { font-family: 'DM Mono', monospace; font-size: 0.78rem; font-weight: 500; padding: 4px 2px; min-width: 46px; text-align: center; border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); cursor: pointer; transition: background 0.1s; user-select: none; }
-  .year-display:hover { background: var(--weekend-bg); }
+/* collapsible detail panel inside each row */
+.docent-detail{display:none;background:#faf8f5;border-top:1px solid var(--rule);padding:16px 20px 20px;}
+.docent-row.open .docent-detail{display:block;}
+.docent-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media(max-width:700px){.docent-detail-grid{grid-template-columns:1fr;}}
 
-  /* year jump input (inline) */
-  .year-input { font-family: 'DM Mono', monospace; font-size: 0.78rem; width: 56px; padding: 4px 6px; border: none; outline: none; text-align: center; background: var(--paper); color: var(--ink); }
+.detail-section-title{font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--rule);}
 
-  .btn-today { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.07em; text-transform: uppercase; padding: 5px 12px; border: 1px solid var(--rule); border-radius: 4px; background: transparent; color: var(--ink); cursor: pointer; transition: background 0.12s; white-space: nowrap; }
-  .btn-today:hover { background: var(--sidebar-bg); color: #fff; border-color: var(--sidebar-bg); }
+/* course links inside detail */
+.koppeling-list{display:flex;flex-direction:column;gap:8px;}
+.koppeling-item{border:1px solid var(--rule);border-radius:4px;background:#fff;overflow:hidden;}
+.koppeling-header{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;font-family:'DM Mono',monospace;font-size:.68rem;transition:background .1s;}
+.koppeling-header:hover{background:var(--weekend-bg);}
+.koppeling-course{flex:1;font-weight:500;}
+.koppeling-days-badge{font-size:.58rem;background:var(--national-bg);color:var(--accent);padding:2px 7px;border-radius:3px;}
+.koppeling-chevron{font-size:.6rem;color:#ccc;transition:transform .15s;}
+.koppeling-item.open .koppeling-chevron{transform:rotate(180deg);}
+.koppeling-body{display:none;padding:10px 12px;border-top:1px solid var(--rule);background:#fdf9f6;}
+.koppeling-item.open .koppeling-body{display:block;}
 
-  /* ── BUTTONS ── */
-  .btn { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.07em; text-transform: uppercase; padding: 6px 14px; border: 1px solid var(--rule); border-radius: 4px; background: transparent; color: var(--ink); cursor: pointer; transition: background 0.12s, border-color 0.12s, color 0.12s; white-space: nowrap; }
-  .btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-  .btn.primary { background: var(--sidebar-bg); color: #fff; border-color: var(--sidebar-bg); }
-  .btn.primary:hover { background: var(--accent); border-color: var(--accent); }
-  .btn.danger { color: var(--danger); border-color: var(--rule); }
-  .btn.danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+/* day toggles */
+.dag-toggle-grid{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+.dag-toggle{font-family:'DM Mono',monospace;font-size:.62rem;padding:4px 9px;border:1px solid var(--rule);border-radius:3px;background:#fff;color:#888;cursor:pointer;transition:background .1s,color .1s,border-color .1s;user-select:none;}
+.dag-toggle.on{background:var(--accent);color:#fff;border-color:var(--accent);}
 
-  /* ── ALERT BANNER ── */
-  .alert { display: none; margin: 14px 32px 0; padding: 11px 16px; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 0.7rem; line-height: 1.55; }
-  .alert.warn { display: block; background: #fff8e6; color: #9a6200; border: 1px solid #f5d78a; }
-  .alert.err  { display: block; background: #fde8e8; color: var(--danger); border: 1px solid #f5b8b8; }
-  .alert strong { display: block; margin-bottom: 3px; font-weight: 500; }
+/* travel time grid */
+.reistijd-grid{display:flex;flex-direction:column;gap:6px;}
+.reistijd-row{display:flex;align-items:center;gap:10px;font-family:'DM Mono',monospace;font-size:.68rem;}
+.reistijd-loc{flex:1;color:#666;}
+.reistijd-input{font-family:'DM Mono',monospace;font-size:.7rem;padding:4px 8px;border:1px solid var(--rule);border-radius:3px;background:#fff;color:var(--ink);width:70px;outline:none;}
+.reistijd-input:focus{border-color:var(--accent);}
+.reistijd-unit{color:#aaa;font-size:.6rem;}
 
-  /* ── CALENDAR ── */
-  .cal-scroll { flex: 1; overflow-y: auto; padding: 16px 32px 32px; }
-  .cal-legend { display: flex; gap: 20px; margin-bottom: 14px; }
-  .leg-item { display: flex; align-items: center; gap: 6px; font-family: 'DM Mono', monospace; font-size: 0.62rem; color: #888; }
-  .leg-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
-  .leg-dot.national { background: var(--national-tag); }
-  .leg-dot.school   { background: var(--school-tag); }
+/* add koppeling form */
+.add-koppeling-form{border:1px dashed var(--rule);border-radius:4px;padding:12px;margin-top:10px;}
+.add-koppeling-form select{font-family:'DM Mono',monospace;font-size:.72rem;padding:5px 9px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink);outline:none;width:100%;margin-bottom:8px;}
+.add-koppeling-form select:focus{border-color:var(--accent);}
 
-  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); border-left: 1px solid var(--rule); border-top: 1px solid var(--rule); }
-  .cal-dh { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: #999; padding: 7px 8px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+/* abr badge */
+.abr-badge{display:inline-block;font-family:'DM Mono',monospace;font-size:.62rem;background:var(--sidebar-bg);color:#c8c4bc;padding:2px 7px;border-radius:3px;letter-spacing:.04em;}
 
-  .cal-cell { border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); min-height: 80px; padding: 7px 8px; background: var(--paper); }
-  .cal-cell.wknd    { background: var(--weekend-bg); }
-  .cal-cell.dim     { opacity: 0.35; }
-  .cal-cell.today   { background: var(--today-bg); }
-  .cal-cell.nat-hol { background: var(--national-bg); }
-  .cal-cell.sch-hol { background: var(--school-bg); }
-  .cal-cell.both    { background: linear-gradient(135deg, var(--national-bg) 50%, var(--school-bg) 50%); }
+/* ══════════════════════════════════════════════════
+   OPLEIDINGEN
+══════════════════════════════════════════════════ */
+.opl-list{display:flex;flex-direction:column;gap:12px;}
+.opl-card{display:flex;align-items:center;gap:16px;padding:16px 20px;border:1px solid var(--rule);border-radius:6px;background:#fff;cursor:pointer;transition:border-color .15s,box-shadow .15s;}
+.opl-card:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(200,97,42,.08);}
+.opl-card-name{font-family:'DM Serif Display',serif;font-size:1.05rem;flex:1;}
+.opl-card-meta{font-family:'DM Mono',monospace;font-size:.62rem;color:#999;}
+.opl-card-arrow{font-size:.8rem;color:#ccc;}
 
-  .cal-dn { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: #999; margin-bottom: 3px; }
-  .cal-cell.today .cal-dn { color: #fff; }
+#add-opl-overlay{position:fixed;inset:0;background:rgba(20,22,28,.65);display:none;align-items:center;justify-content:center;z-index:200;}
+#add-opl-box{background:var(--paper);border-radius:8px;padding:32px 36px;max-width:560px;width:92%;max-height:88vh;overflow-y:auto;}
+#add-opl-box h3{font-family:'DM Serif Display',serif;font-size:1.2rem;margin-bottom:18px;}
+.days-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.day-row{display:flex;align-items:center;gap:8px;}
+.day-num{font-family:'DM Mono',monospace;font-size:.65rem;color:#999;min-width:52px;}
+.day-row input{flex:1;font-family:'DM Mono',monospace;font-size:.75rem;padding:6px 10px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink);outline:none;}
+.day-row input:focus{border-color:var(--accent);}
 
-  .cal-tag { display: block; font-family: 'DM Mono', monospace; font-size: 0.58rem; border-radius: 2px; padding: 2px 5px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-  .cal-tag.national { background: var(--national-tag); color: #fff; }
-  .cal-tag.school   { background: var(--school-tag);   color: #fff; }
+.opl-detail-header{padding:18px 32px 0;border-bottom:1px solid var(--rule);background:var(--paper);flex-shrink:0;}
+.opl-breadcrumb{font-family:'DM Mono',monospace;font-size:.62rem;color:#999;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer;}
+.opl-breadcrumb:hover{color:var(--accent);}
+.opl-detail-title{font-family:'DM Serif Display',serif;font-size:1.5rem;margin-bottom:14px;}
+.subtab-bar{display:flex;gap:0;}
+.subtab{font-family:'DM Mono',monospace;font-size:.68rem;letter-spacing:.07em;text-transform:uppercase;padding:9px 18px;cursor:pointer;color:#999;border-bottom:2px solid transparent;transition:color .12s,border-color .12s;white-space:nowrap;}
+.subtab:hover{color:var(--ink);}
+.subtab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.opl-subpage{display:none;flex:1;overflow-y:auto;padding:24px 32px 36px;}
+.opl-subpage.active{display:block;}
+.year-block{margin-bottom:32px;}
+.year-block-title{font-family:'DM Serif Display',serif;font-size:1.15rem;margin-bottom:12px;color:var(--ink);}
+.groups-table{width:100%;border-collapse:collapse;font-size:.82rem;}
+.groups-table thead th{font-family:'DM Mono',monospace;font-size:.56rem;letter-spacing:.09em;text-transform:uppercase;color:#999;padding:7px 10px;text-align:left;border-bottom:1px solid var(--rule);white-space:nowrap;}
+.groups-table tbody tr{border-bottom:1px solid var(--rule);transition:background .1s;}
+.groups-table tbody tr:hover{background:#eeebe6;}
+.groups-table td{padding:9px 10px;vertical-align:middle;}
+.groups-table .empty-row td{text-align:center;font-family:'DM Mono',monospace;font-size:.7rem;color:#bbb;padding:28px;}
+.struct-version-list{display:flex;flex-direction:column;gap:14px;margin-bottom:28px;}
+.struct-version-card{border:1px solid var(--rule);border-radius:6px;background:#fff;overflow:hidden;}
+.struct-version-header{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--paper);border-bottom:1px solid var(--rule);cursor:pointer;user-select:none;}
+.struct-version-header:hover{background:var(--weekend-bg);}
+.struct-version-name{font-family:'DM Mono',monospace;font-size:.75rem;font-weight:500;flex:1;}
+.struct-version-badge{font-family:'DM Mono',monospace;font-size:.58rem;padding:2px 8px;border-radius:3px;}
+.struct-version-badge.base{background:var(--accent);color:#fff;}
+.struct-version-badge.alt{background:var(--weekend-bg);color:#888;}
+.struct-version-chevron{font-size:.65rem;color:#ccc;transition:transform .15s;}
+.struct-version-card.open .struct-version-chevron{transform:rotate(180deg);}
+.struct-version-body{display:none;padding:14px 16px;}
+.struct-version-card.open .struct-version-body{display:block;}
+.struct-days-table{width:100%;border-collapse:collapse;font-size:.8rem;}
+.struct-days-table thead th{font-family:'DM Mono',monospace;font-size:.56rem;letter-spacing:.09em;text-transform:uppercase;color:#999;padding:5px 10px;text-align:left;border-bottom:1px solid var(--rule);}
+.struct-days-table tbody tr{border-bottom:1px solid var(--rule);}
+.struct-days-table tbody tr:last-child{border-bottom:none;}
+.struct-days-table td{padding:7px 10px;vertical-align:middle;}
+.struct-days-table td:first-child{font-family:'DM Mono',monospace;font-size:.68rem;color:#999;width:60px;}
+.struct-days-table td.editable input{font-family:'DM Mono',monospace;font-size:.75rem;padding:3px 7px;border:1px solid var(--rule);border-radius:3px;background:#fff;color:var(--ink);outline:none;width:100%;}
+.struct-days-table td.editable input:focus{border-color:var(--accent);}
+#add-struct-form{border:1px dashed var(--rule);border-radius:6px;padding:18px;display:none;margin-top:4px;}
+#add-struct-form.visible{display:block;}
+#add-struct-days-list{display:flex;flex-direction:column;gap:8px;margin:14px 0 10px;}
 
-  /* ── SHARED PAGE STYLES ── */
-  .page-content { flex: 1; overflow-y: auto; padding: 22px 32px 36px; }
-  .sec-label { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
-  .form-row { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 26px; flex-wrap: wrap; }
-  .field { display: flex; flex-direction: column; gap: 5px; }
-  .field label { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.09em; text-transform: uppercase; color: #888; }
-  .field input { font-family: 'DM Mono', monospace; font-size: 0.78rem; padding: 7px 11px; border: 1px solid var(--rule); border-radius: 4px; background: #fff; color: var(--ink); outline: none; transition: border-color 0.14s; }
-  .field input:focus { border-color: var(--accent); }
+/* ── CONFIG ── */
+#cfg-overlay{position:fixed;inset:0;background:rgba(20,22,28,.7);display:none;align-items:center;justify-content:center;z-index:200;}
+#cfg-box{background:var(--paper);border-radius:8px;padding:32px 36px;max-width:540px;width:90%;}
+#cfg-box h3{font-family:'DM Serif Display',serif;font-size:1.2rem;margin-bottom:10px;}
+#cfg-box p{font-size:.82rem;color:#666;line-height:1.65;margin-bottom:14px;}
+.cfg-field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+.cfg-field label{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.09em;text-transform:uppercase;color:#888;}
+.cfg-field input{font-family:'DM Mono',monospace;font-size:.78rem;padding:7px 11px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink);outline:none;width:100%;}
+.cfg-field input:focus{border-color:var(--accent);}
+.cfg-row{display:flex;gap:10px;margin-top:16px;}
 
-  .htable { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-  .htable thead th { font-family: 'DM Mono', monospace; font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: #999; padding: 7px 11px; text-align: left; border-bottom: 1px solid var(--rule); }
-  .htable tbody tr { border-bottom: 1px solid var(--rule); transition: background 0.1s; }
-  .htable tbody tr:hover { background: #eeebe6; }
-  .htable td { padding: 9px 11px; vertical-align: middle; }
-  .htable td:first-child { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: #777; white-space: nowrap; }
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--sidebar-bg);color:#fff;font-family:'DM Mono',monospace;font-size:.68rem;padding:10px 18px;border-radius:4px;border-left:3px solid var(--accent);opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:300;}
+#toast.show{opacity:1;transform:translateY(0);}
 
-  .tag-pill { display: inline-block; font-family: 'DM Mono', monospace; font-size: 0.58rem; border-radius: 2px; padding: 2px 7px; color: #fff; }
-  .tag-pill.national { background: var(--national-tag); }
-  .tag-pill.school   { background: var(--school-tag); }
-
-  .empty { padding: 36px 0; text-align: center; font-family: 'DM Mono', monospace; font-size: 0.7rem; color: #bbb; }
-
-  /* ── CONFIG OVERLAY ── */
-  #cfg-overlay { position: fixed; inset: 0; background: rgba(20,22,28,0.7); display: none; align-items: center; justify-content: center; z-index: 200; }
-  #cfg-box { background: var(--paper); border-radius: 8px; padding: 32px 36px; max-width: 540px; width: 90%; }
-  #cfg-box h3 { font-family: 'DM Serif Display', serif; font-size: 1.2rem; margin-bottom: 10px; }
-  #cfg-box p  { font-size: 0.82rem; color: #666; line-height: 1.65; margin-bottom: 14px; }
-  .cfg-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
-  .cfg-field label { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.09em; text-transform: uppercase; color: #888; }
-  .cfg-field input { font-family: 'DM Mono', monospace; font-size: 0.78rem; padding: 7px 11px; border: 1px solid var(--rule); border-radius: 4px; background: #fff; color: var(--ink); outline: none; width: 100%; }
-  .cfg-field input:focus { border-color: var(--accent); }
-  .cfg-row { display: flex; gap: 10px; margin-top: 16px; }
-
-  /* ── TOAST ── */
-  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--sidebar-bg); color: #fff; font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 10px 18px; border-radius: 4px; border-left: 3px solid var(--accent); opacity: 0; transform: translateY(6px); transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 300; }
-  #toast.show { opacity: 1; transform: translateY(0); }
-
-  ::-webkit-scrollbar { width: 5px; }
-  ::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-thumb{background:var(--rule);border-radius:3px;}
 </style>
 </head>
 <body>
@@ -193,8 +278,25 @@
     <div class="cfg-field"><label>SharePoint host</label><input id="cfg-sp-host" placeholder="bedrijf.sharepoint.com"></div>
     <div class="cfg-field"><label>Pad naar Excel-bestand</label><input id="cfg-drive-path" placeholder="/sites/planning/Gedeelde documenten/planningdata.xlsx"></div>
     <div class="cfg-row">
-      <button class="btn primary" onclick="saveConfig()">Opslaan &amp; verbinden</button>
+      <button class="btn primary" onclick="saveCfgOverlay()">Opslaan &amp; verbinden</button>
       <button class="btn" onclick="closeCfg()">Annuleren</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD OPLEIDING OVERLAY -->
+<div id="add-opl-overlay">
+  <div id="add-opl-box">
+    <h3>Opleiding toevoegen</h3>
+    <div class="form-row" style="margin-bottom:16px">
+      <div class="field" style="flex:1"><label>Naam opleiding</label><input type="text" id="new-opl-name" placeholder="bijv. HVK"></div>
+      <div class="field"><label>Aantal contactdagen</label><input type="number" id="new-opl-days" min="1" max="200" value="5" style="width:110px" oninput="syncNewDayRows()"></div>
+    </div>
+    <div class="sec-label" style="margin-bottom:10px">Dagindeling (basisstructuur)</div>
+    <div class="days-list" id="new-opl-days-list"></div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn primary" onclick="confirmAddOpleiding()">Opleiding aanmaken</button>
+      <button class="btn" onclick="closeAddOpl()">Annuleren</button>
     </div>
   </div>
 </div>
@@ -203,32 +305,53 @@
 <div id="sidebar">
   <div class="sb-logo">
     <h1>Plannings&shy;overzicht</h1>
-    <span>Microsoft 365 · v1.2</span>
+    <span>Microsoft 365 · v1.5</span>
   </div>
-  <nav>
+  <div class="sb-nav">
     <a class="active" onclick="showPage('calendar',this)">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
       Kalender
     </a>
     <a onclick="showPage('national',this)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
       Feestdagen
       <span class="badge" id="badge-national">0</span>
     </a>
     <a onclick="showPage('school',this)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
       Schoolvakanties
       <span class="badge" id="badge-school">0</span>
     </a>
-    <a onclick="openCfg()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <a onclick="showPage('docenten',this)" id="nav-docenten">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Docenten
+      <span class="badge" id="badge-docenten">0</span>
+    </a>
+
+    <div class="nav-section-label">Opleidingen</div>
+    <a onclick="showPage('opleidingen',this)" id="nav-opleidingen">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+      Opleidingen
+      <span class="badge" id="badge-opleidingen">0</span>
+    </a>
+
+    <div class="nav-section-label">Zaalreserveringen</div>
+    <a onclick="showPage('locaties',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Locaties
+      <span class="badge" id="badge-locaties">0</span>
+    </a>
+
+    <div class="nav-section-label">Beheer</div>
+    <a onclick="showPage('settings',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Instellingen
     </a>
     <a onclick="signOut()" id="nav-signout" style="display:none">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Uitloggen
     </a>
-  </nav>
+  </div>
   <div class="sb-footer">
     <div class="sync-dot" id="sync-dot"></div>
     <span id="sync-text">Initialiseren…</span>
@@ -243,8 +366,8 @@
   <div class="page active" id="page-login" style="display:flex">
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px">
       <h2 style="font-family:'DM Serif Display',serif;font-size:1.6rem">Planningsoverzicht</h2>
-      <p style="font-size:0.85rem;color:#777;text-align:center;max-width:340px;line-height:1.6">Log in met jouw Microsoft 365 account om de gedeelde planning te openen.</p>
-      <button class="btn primary" onclick="signIn()" style="padding:10px 28px;font-size:0.75rem">Inloggen met Microsoft</button>
+      <p style="font-size:.85rem;color:#777;text-align:center;max-width:340px;line-height:1.6">Log in met jouw Microsoft 365 account om de gedeelde planning te openen.</p>
+      <button class="btn primary" onclick="signIn()" style="padding:10px 28px;font-size:.75rem">Inloggen met Microsoft</button>
     </div>
   </div>
 
@@ -252,26 +375,17 @@
   <div class="page" id="page-calendar">
     <div class="topbar">
       <h2 id="cal-title"></h2>
-
       <div class="cal-nav-group">
-        <!-- Year control -->
         <div class="year-control" title="Klik op het jaar om direct in te typen">
           <button class="year-arrow" onclick="changeYear(-1)">&#8592;</button>
           <div class="year-display" id="year-display" onclick="startYearEdit()"></div>
           <button class="year-arrow" onclick="changeYear(1)">&#8594;</button>
         </div>
-
-        <!-- Month strip -->
         <div class="month-strip" id="month-strip"></div>
-
-        <!-- Divider -->
         <div style="width:1px;height:22px;background:var(--rule);margin:0 2px"></div>
-
-        <!-- Today -->
         <button class="btn-today" onclick="goToday()">Vandaag</button>
       </div>
     </div>
-
     <div class="cal-scroll">
       <div class="cal-legend">
         <div class="leg-item"><div class="leg-dot national"></div>Nationale feestdag</div>
@@ -283,10 +397,7 @@
 
   <!-- NATIONALE FEESTDAGEN -->
   <div class="page" id="page-national">
-    <div class="topbar">
-      <h2>Nationale feestdagen</h2>
-      <button class="btn" onclick="loadAll()">&#8635; Vernieuwen</button>
-    </div>
+    <div class="topbar"><h2>Nationale feestdagen</h2><button class="btn" onclick="loadAll()">&#8635; Vernieuwen</button></div>
     <div class="page-content">
       <div class="sec-label">Feestdag toevoegen</div>
       <div class="form-row">
@@ -295,20 +406,14 @@
         <button class="btn primary" onclick="addNational()">+ Toevoegen</button>
       </div>
       <div class="sec-label" style="margin-bottom:14px">Overzicht</div>
-      <table class="htable">
-        <thead><tr><th>Datum</th><th>Feestdag</th><th>Dag</th><th></th></tr></thead>
-        <tbody id="nat-tbody"></tbody>
-      </table>
+      <table class="htable"><thead><tr><th>Datum</th><th>Feestdag</th><th>Dag</th><th></th></tr></thead><tbody id="nat-tbody"></tbody></table>
       <div class="empty" id="nat-empty" style="display:none">Nog geen feestdagen ingevoerd.</div>
     </div>
   </div>
 
   <!-- SCHOOLVAKANTIES -->
   <div class="page" id="page-school">
-    <div class="topbar">
-      <h2>Schoolvakanties</h2>
-      <button class="btn" onclick="loadAll()">&#8635; Vernieuwen</button>
-    </div>
+    <div class="topbar"><h2>Schoolvakanties</h2><button class="btn" onclick="loadAll()">&#8635; Vernieuwen</button></div>
     <div class="page-content">
       <div class="sec-label">Vakantie toevoegen</div>
       <div class="form-row">
@@ -317,13 +422,145 @@
         <div class="field"><label>Einddatum</label><input type="date" id="sch-to"></div>
         <button class="btn primary" onclick="addSchool()">+ Toevoegen</button>
       </div>
-      <div id="sch-preview" style="font-family:'DM Mono',monospace;font-size:0.68rem;color:#888;margin-bottom:20px;min-height:18px"></div>
+      <div id="sch-preview" style="font-family:'DM Mono',monospace;font-size:.68rem;color:#888;margin-bottom:20px;min-height:18px"></div>
       <div class="sec-label" style="margin-bottom:14px">Overzicht</div>
-      <table class="htable">
-        <thead><tr><th>Van</th><th>Tot</th><th>Vakantie</th><th>Dagen</th><th></th></tr></thead>
-        <tbody id="sch-tbody"></tbody>
-      </table>
+      <table class="htable"><thead><tr><th>Van</th><th>Tot</th><th>Vakantie</th><th>Dagen</th><th></th></tr></thead><tbody id="sch-tbody"></tbody></table>
       <div class="empty" id="sch-empty" style="display:none">Nog geen schoolvakanties ingevoerd.</div>
+    </div>
+  </div>
+
+  <!-- DOCENTEN -->
+  <div class="page" id="page-docenten">
+    <div class="topbar">
+      <h2>Docenten</h2>
+      <button class="btn accent" onclick="openAddDocent()" style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:1rem;line-height:1">+</span> Docent toevoegen
+      </button>
+    </div>
+    <div class="page-content">
+      <!-- Add form (inline, collapsible) -->
+      <div id="add-docent-form" style="display:none;margin-bottom:24px">
+        <div class="sec-label">Nieuwe docent</div>
+        <div class="form-row">
+          <div class="field"><label>Naam</label><input type="text" id="doc-naam" placeholder="Voor- en achternaam" style="min-width:200px"></div>
+          <div class="field"><label>Afkorting</label><input type="text" id="doc-afk" placeholder="bijv. FHI" style="width:90px" oninput="this.value=this.value.toUpperCase()"></div>
+          <div class="field"><label>Woonplaats</label><input type="text" id="doc-plaats" placeholder="bijv. Almelo" style="min-width:140px"></div>
+          <button class="btn primary" onclick="addDocent()">Toevoegen</button>
+          <button class="btn" onclick="closeAddDocent()">Annuleren</button>
+        </div>
+      </div>
+
+      <!-- Search -->
+      <div class="search-bar">
+        <input type="text" id="docent-search" placeholder="Zoek op naam, afkorting of woonplaats…" oninput="renderDocentTable()">
+        <span id="docent-count" style="font-family:'DM Mono',monospace;font-size:.65rem;color:#aaa"></span>
+      </div>
+
+      <!-- Table -->
+      <table class="docent-table" id="docent-table">
+        <thead>
+          <tr>
+            <th style="width:32px"></th>
+            <th>Naam</th>
+            <th>Afkorting</th>
+            <th>Woonplaats</th>
+            <th>Opleidingen</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="docent-tbody"></tbody>
+      </table>
+      <div class="empty" id="docent-empty" style="display:none">Nog geen docenten ingevoerd.</div>
+    </div>
+  </div>
+
+  <!-- OPLEIDINGEN LIST -->
+  <div class="page" id="page-opleidingen">
+    <div class="topbar">
+      <h2>Opleidingen</h2>
+      <button class="btn accent" onclick="openAddOpl()" style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:1rem;line-height:1">+</span> Opleiding toevoegen
+      </button>
+    </div>
+    <div class="page-content">
+      <div class="opl-list" id="opl-list"></div>
+      <div class="empty" id="opl-empty" style="display:none">Nog geen opleidingen aangemaakt.</div>
+    </div>
+  </div>
+
+  <!-- OPLEIDING DETAIL -->
+  <div class="page" id="page-opl-detail">
+    <div class="opl-detail-header">
+      <div class="opl-breadcrumb" onclick="showPage('opleidingen',document.getElementById('nav-opleidingen'))">&#8592; Opleidingen</div>
+      <div class="opl-detail-title" id="opl-detail-title"></div>
+      <div class="subtab-bar">
+        <div class="subtab active" id="subtab-overzicht" onclick="showSubtab('overzicht')">Overzicht</div>
+        <div class="subtab" id="subtab-structuur" onclick="showSubtab('structuur')">Opleidingsstructuur</div>
+      </div>
+    </div>
+    <div class="opl-subpage active" id="opl-sub-overzicht">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div class="sec-label" style="margin:0;border:none;padding:0">Groepen per jaar</div>
+        <button class="btn accent sm" style="display:flex;align-items:center;gap:5px" onclick="toast('Groep toevoegen — nog niet geïmplementeerd.')"><span style="font-size:.9rem;line-height:1">+</span> Groep toevoegen</button>
+      </div>
+      <div class="year-block">
+        <div class="year-block-title">2026</div>
+        <table class="groups-table">
+          <thead><tr><th>Groepsnaam</th><th>Locatie</th><th>AFAS code</th><th>Startdatum</th><th>Einddatum</th><th>Kandidaten</th><th>Groepscoördinator</th><th></th></tr></thead>
+          <tbody id="groups-2026"><tr class="empty-row"><td colspan="8">Nog geen groepen voor 2026.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="opl-subpage" id="opl-sub-structuur">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div class="sec-label" style="margin:0;border:none;padding:0">Structuurversies</div>
+        <button class="btn accent sm" style="display:flex;align-items:center;gap:5px" onclick="toggleAddStructForm()"><span style="font-size:.9rem;line-height:1">+</span> Nieuwe structuur toevoegen</button>
+      </div>
+      <div class="struct-version-list" id="struct-version-list"></div>
+      <div id="add-struct-form">
+        <div class="sec-label" style="margin-bottom:12px">Nieuwe structuurversie</div>
+        <div class="form-row" style="margin-bottom:12px">
+          <div class="field" style="flex:1"><label>Versienaam</label><input type="text" id="new-struct-name" placeholder="bijv. Structuur 2026"></div>
+          <div class="field"><label>Aantal contactdagen</label><input type="number" id="new-struct-days" min="1" max="200" value="5" oninput="syncNewStructDayRows()" style="width:110px"></div>
+        </div>
+        <div id="add-struct-days-list"></div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn primary sm" onclick="confirmAddStructure()">Structuur opslaan</button>
+          <button class="btn sm" onclick="toggleAddStructForm()">Annuleren</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOCATIES -->
+  <div class="page" id="page-locaties">
+    <div class="topbar"><h2>Locaties</h2><button class="btn" onclick="loadAll()">&#8635; Vernieuwen</button></div>
+    <div class="page-content">
+      <div class="sec-label">Locatie toevoegen</div>
+      <div class="form-row">
+        <div class="field"><label>Naam locatie</label><input type="text" id="loc-name" placeholder="bijv. Hoofdkantoor Amsterdam" style="min-width:240px"></div>
+        <div class="field"><label>Stad</label><input type="text" id="loc-city" placeholder="bijv. Amsterdam" style="min-width:150px"></div>
+        <button class="btn primary" onclick="addLocation()">+ Toevoegen</button>
+      </div>
+      <div class="sec-label" style="margin-bottom:16px">Overzicht locaties &amp; zalen</div>
+      <div class="location-list" id="location-list"></div>
+      <div class="empty" id="loc-empty" style="display:none">Nog geen locaties ingevoerd.</div>
+    </div>
+  </div>
+
+  <!-- INSTELLINGEN -->
+  <div class="page" id="page-settings">
+    <div class="topbar"><h2>Instellingen</h2></div>
+    <div class="page-content">
+      <div class="sec-label">SharePoint verbinding</div>
+      <div class="form-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+        <div class="field"><label>Azure AD Client ID</label><input type="text" id="set-client-id" style="min-width:340px"></div>
+        <div class="field"><label>SharePoint host</label><input type="text" id="set-sp-host" style="min-width:340px"></div>
+        <div class="field"><label>Pad naar Excel-bestand</label><input type="text" id="set-drive-path" style="min-width:340px"></div>
+        <button class="btn primary" onclick="saveFromSettings()">Opslaan &amp; verbinden</button>
+      </div>
+      <div style="margin-top:28px" class="sec-label">Account</div>
+      <div style="margin-top:4px"><button class="btn danger" onclick="signOut()">Uitloggen</button></div>
     </div>
   </div>
 </div>
@@ -334,478 +571,443 @@
 // ══════════════════════════════════════════════════════════════════
 //  CONFIG
 // ══════════════════════════════════════════════════════════════════
-function getCfg() {
-  return {
-    clientId:  localStorage.getItem('po_client_id')  || '',
-    spHost:    localStorage.getItem('po_sp_host')    || '',
-    drivePath: localStorage.getItem('po_drive_path') || '',
-  };
-}
-function saveConfig() {
-  const clientId  = document.getElementById('cfg-client-id').value.trim();
-  const spHost    = document.getElementById('cfg-sp-host').value.trim().replace(/\/$/, '');
-  const drivePath = document.getElementById('cfg-drive-path').value.trim();
-  if (!clientId || !spHost || !drivePath) { toast('Vul alle velden in.'); return; }
-  localStorage.setItem('po_client_id',  clientId);
-  localStorage.setItem('po_sp_host',    spHost);
-  localStorage.setItem('po_drive_path', drivePath);
-  closeCfg();
-  initMsal();
-}
-function openCfg() {
-  const c = getCfg();
-  document.getElementById('cfg-client-id').value  = c.clientId;
-  document.getElementById('cfg-sp-host').value    = c.spHost;
-  document.getElementById('cfg-drive-path').value = c.drivePath;
-  document.getElementById('cfg-overlay').style.display = 'flex';
-}
-function closeCfg() { document.getElementById('cfg-overlay').style.display = 'none'; }
+function getCfg(){return{clientId:localStorage.getItem('po_client_id')||'',spHost:localStorage.getItem('po_sp_host')||'',drivePath:localStorage.getItem('po_drive_path')||''};}
+function saveConfig(c,s,d){if(!c||!s||!d){toast('Vul alle velden in.');return false;}localStorage.setItem('po_client_id',c);localStorage.setItem('po_sp_host',s);localStorage.setItem('po_drive_path',d);return true;}
+function openCfg(){const c=getCfg();document.getElementById('cfg-client-id').value=c.clientId;document.getElementById('cfg-sp-host').value=c.spHost;document.getElementById('cfg-drive-path').value=c.drivePath;document.getElementById('cfg-overlay').style.display='flex';}
+function closeCfg(){document.getElementById('cfg-overlay').style.display='none';}
+function saveCfgOverlay(){const ok=saveConfig(document.getElementById('cfg-client-id').value.trim(),document.getElementById('cfg-sp-host').value.trim().replace(/\/$/,''),document.getElementById('cfg-drive-path').value.trim());if(ok){closeCfg();initMsal();}}
+function saveFromSettings(){const ok=saveConfig(document.getElementById('set-client-id').value.trim(),document.getElementById('set-sp-host').value.trim().replace(/\/$/,''),document.getElementById('set-drive-path').value.trim());if(ok){toast('Instellingen opgeslagen.');initMsal();}}
+function populateSettingsFields(){const c=getCfg();document.getElementById('set-client-id').value=c.clientId;document.getElementById('set-sp-host').value=c.spHost;document.getElementById('set-drive-path').value=c.drivePath;}
 
 // ══════════════════════════════════════════════════════════════════
 //  MSAL
 // ══════════════════════════════════════════════════════════════════
-let msalInstance = null;
-
-function initMsal() {
-  const cfg = getCfg();
-  if (!cfg.clientId || !cfg.spHost) {
-    setSyncStatus('err', 'Niet geconfigureerd');
-    showBanner('warn', 'Configuratie ontbreekt', ' Klik op "Instellingen" om de app te configureren.');
-    openCfg();
-    return;
-  }
-  msalInstance = new msal.PublicClientApplication({
-    auth: {
-      clientId: cfg.clientId,
-      authority: 'https://login.microsoftonline.com/common',
-      redirectUri: window.location.href.split('?')[0].split('#')[0],
-    },
-    cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true }
-  });
-  msalInstance.handleRedirectPromise().then(resp => {
-    const accounts = msalInstance.getAllAccounts();
-    if (accounts.length > 0) {
-      msalInstance.setActiveAccount(accounts[0]);
-      onSignedIn();
-    } else {
-      showPage('login', null);
-      setSyncStatus('err', 'Niet ingelogd');
-    }
-  }).catch(e => {
-    setSyncStatus('err', 'Auth fout');
-    showBanner('err', 'Inlogfout', ' ' + e.message);
-  });
+let msalInstance=null;
+function initMsal(){
+  const cfg=getCfg();
+  if(!cfg.clientId||!cfg.spHost){setSyncStatus('err','Niet geconfigureerd');showBanner('warn','Configuratie ontbreekt',' Klik op "Instellingen" om de app te configureren.');openCfg();return;}
+  msalInstance=new msal.PublicClientApplication({auth:{clientId:cfg.clientId,authority:'https://login.microsoftonline.com/common',redirectUri:window.location.href.split('?')[0].split('#')[0]},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:true}});
+  msalInstance.handleRedirectPromise().then(()=>{
+    const accounts=msalInstance.getAllAccounts();
+    if(accounts.length>0){msalInstance.setActiveAccount(accounts[0]);onSignedIn();}
+    else{showPage('login',null);setSyncStatus('err','Niet ingelogd');}
+  }).catch(e=>{setSyncStatus('err','Auth fout');showBanner('err','Inlogfout',' '+e.message);});
 }
-
-async function getToken() {
-  const cfg = getCfg();
-  const scopes = [`https://${cfg.spHost}/AllSites.Write`, 'User.Read'];
-  try {
-    const r = await msalInstance.acquireTokenSilent({ scopes, account: msalInstance.getActiveAccount() });
-    return r.accessToken;
-  } catch(e) {
-    const r = await msalInstance.acquireTokenPopup({ scopes });
-    return r.accessToken;
-  }
-}
-function signIn() {
-  const cfg = getCfg();
-  msalInstance.loginRedirect({ scopes: [`https://${cfg.spHost}/AllSites.Write`, 'User.Read'] });
-}
-function signOut() { msalInstance.logoutRedirect(); }
-function onSignedIn() {
-  const acct = msalInstance.getActiveAccount();
-  document.getElementById('nav-signout').style.display = 'flex';
-  setSyncStatus('ok', acct ? acct.name || 'Ingelogd' : 'Ingelogd');
-  hideBanner();
-  showPage('calendar', document.querySelector('nav a'));
-  loadAll();
-  setInterval(loadAll, 60000);
-}
+async function getToken(){const cfg=getCfg();const scopes=[`https://${cfg.spHost}/AllSites.Write`,'User.Read'];try{const r=await msalInstance.acquireTokenSilent({scopes,account:msalInstance.getActiveAccount()});return r.accessToken;}catch(e){const r=await msalInstance.acquireTokenPopup({scopes});return r.accessToken;}}
+function signIn(){const cfg=getCfg();msalInstance.loginRedirect({scopes:[`https://${cfg.spHost}/AllSites.Write`,'User.Read']});}
+function signOut(){msalInstance.logoutRedirect();}
+function onSignedIn(){const acct=msalInstance.getActiveAccount();document.getElementById('nav-signout').style.display='flex';setSyncStatus('ok',acct?acct.name||'Ingelogd':'Ingelogd');hideBanner();populateSettingsFields();showPage('calendar',document.querySelector('.sb-nav a'));loadAll();setInterval(loadAll,60000);}
 
 // ══════════════════════════════════════════════════════════════════
 //  GRAPH / EXCEL
+//  Sheets: Feestdagen | Vakanties | Locaties | Zalen
+//          Opleidingen | OplStructuur
+//          Docenten | DocentReistijd | DocentKoppeling
+//
+//  Docenten:      A=ID  B=Naam  C=Afkorting  D=Woonplaats
+//  DocentReistijd:A=ID  B=DocentID  C=LocatieID  D=ReistijdUren
+//  DocentKoppeling:A=ID B=DocentID C=OpleidingID D=StructuurID E=Dagen("1,3,5")
 // ══════════════════════════════════════════════════════════════════
-let _sessionId = null;
-function driveBase() { return `/me/drive/root:${getCfg().drivePath}:/workbook`; }
-
-async function getSession() {
-  if (_sessionId) return _sessionId;
-  const token = await getToken();
-  const r = await fetch(`https://graph.microsoft.com/v1.0${driveBase()}/createSession`, {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ persistChanges: true })
-  });
-  if (!r.ok) { _sessionId = null; throw new Error('Sessie aanmaken mislukt: HTTP ' + r.status); }
-  _sessionId = (await r.json()).id;
-  return _sessionId;
-}
-
-async function xlGet(endpoint) {
-  const token = await getToken(); const sid = await getSession();
-  const r = await fetch(`https://graph.microsoft.com/v1.0${driveBase()}${endpoint}`, {
-    headers: { 'Authorization': 'Bearer ' + token, 'workbook-session-id': sid }
-  });
-  if (!r.ok) { _sessionId = null; throw new Error('HTTP ' + r.status); }
-  return r.json();
-}
-async function xlPatch(endpoint, body) {
-  const token = await getToken(); const sid = await getSession();
-  const r = await fetch(`https://graph.microsoft.com/v1.0${driveBase()}${endpoint}`, {
-    method: 'PATCH',
-    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'workbook-session-id': sid },
-    body: JSON.stringify(body)
-  });
-  if (!r.ok) { _sessionId = null; throw new Error('HTTP ' + r.status); }
-  return r.status === 204 ? null : r.json();
-}
-async function xlPost(endpoint, body) {
-  const token = await getToken(); const sid = await getSession();
-  const r = await fetch(`https://graph.microsoft.com/v1.0${driveBase()}${endpoint}`, {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'workbook-session-id': sid },
-    body: JSON.stringify(body)
-  });
-  if (!r.ok) { _sessionId = null; throw new Error('HTTP ' + r.status); }
-  return r.status === 204 ? null : r.json();
-}
+let _sid=null;
+function driveBase(){return `/me/drive/root:${getCfg().drivePath}:/workbook`;}
+async function getSession(){if(_sid)return _sid;const token=await getToken();const r=await fetch(`https://graph.microsoft.com/v1.0${driveBase()}/createSession`,{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({persistChanges:true})});if(!r.ok){_sid=null;throw new Error('Sessie mislukt: HTTP '+r.status);}_sid=(await r.json()).id;return _sid;}
+async function xlGet(ep){const token=await getToken();const sid=await getSession();const r=await fetch(`https://graph.microsoft.com/v1.0${driveBase()}${ep}`,{headers:{'Authorization':'Bearer '+token,'workbook-session-id':sid}});if(!r.ok){_sid=null;throw new Error('HTTP '+r.status);}return r.json();}
+async function xlPatch(ep,body){const token=await getToken();const sid=await getSession();const r=await fetch(`https://graph.microsoft.com/v1.0${driveBase()}${ep}`,{method:'PATCH',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','workbook-session-id':sid},body:JSON.stringify(body)});if(!r.ok){_sid=null;throw new Error('HTTP '+r.status);}return r.status===204?null:r.json();}
+async function xlPost(ep,body){const token=await getToken();const sid=await getSession();const r=await fetch(`https://graph.microsoft.com/v1.0${driveBase()}${ep}`,{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','workbook-session-id':sid},body:JSON.stringify(body)});if(!r.ok){_sid=null;throw new Error('HTTP '+r.status);}return r.status===204?null:r.json();}
+async function ensureSheet(name,headers){try{await xlGet(`/worksheets/${name}/usedRange`);}catch(e){await xlPost(`/worksheets/add`,{name});await xlPatch(`/worksheets/${name}/range(address='A1:${String.fromCharCode(64+headers.length)}1')`,{values:[headers]});}}
 
 // ══════════════════════════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════════════════════════
-let nationals = [];
-let schools   = [];
+let nationals=[],schools=[],locations=[],rooms=[];
+let opleidingen=[],oplStructuren=[];
+let docenten=[],docentReistijd=[],docentKoppelingen=[];
+let currentOplId=null;
 
-async function loadAll() {
-  setSyncStatus('busy', 'Laden…');
-  try {
-    await Promise.all([loadNationals(), loadSchools()]);
-    setSyncStatus('ok', 'Gesynchroniseerd');
-    hideBanner();
-  } catch(e) {
-    setSyncStatus('err', 'Fout');
-    showBanner('err', 'Kan Excel niet laden', ' ' + e.message);
-  }
-  renderCalendar();
-  renderNationalTable();
-  renderSchoolTable();
-  updateBadges();
+async function loadAll(){
+  setSyncStatus('busy','Laden…');
+  try{
+    await Promise.all([
+      loadNationals(),loadSchools(),loadLocations(),loadRooms(),
+      loadOpleidingen(),loadOplStructuren(),
+      loadDocenten(),loadDocentReistijd(),loadDocentKoppelingen()
+    ]);
+    setSyncStatus('ok','Gesynchroniseerd');hideBanner();
+  }catch(e){setSyncStatus('err','Fout');showBanner('err','Kan Excel niet laden',' '+e.message);}
+  renderCalendar();renderNationalTable();renderSchoolTable();
+  renderLocations();renderOplList();renderDocentTable();updateBadges();
+  if(currentOplId)renderOplDetail(currentOplId);
 }
 
-async function loadNationals() {
-  const data = await xlGet(`/worksheets/Feestdagen/usedRange`);
-  nationals = (data.values || []).slice(1)
-    .filter(r => r[0] && r[1])
-    .map((r, i) => ({ row: i+2, date: String(r[0]).slice(0,10), name: String(r[1]) }))
-    .filter(h => /^\d{4}-\d{2}-\d{2}$/.test(h.date))
-    .sort((a,b) => a.date.localeCompare(b.date));
-  if (nationals.length === 0) await seedNationals();
-}
+// ── nationals ──
+async function loadNationals(){const data=await xlGet(`/worksheets/Feestdagen/usedRange`);nationals=(data.values||[]).slice(1).filter(r=>r[0]&&r[1]).map((r,i)=>({row:i+2,date:String(r[0]).slice(0,10),name:String(r[1])})).filter(h=>/^\d{4}-\d{2}-\d{2}$/.test(h.date)).sort((a,b)=>a.date.localeCompare(b.date));if(nationals.length===0)await seedNationals();}
+async function seedNationals(){const rows=[['Datum','Naam'],...DEFAULT_NATIONALS];await xlPatch(`/worksheets/Feestdagen/range(address='A1:B${rows.length}')`,{values:rows});const data=await xlGet(`/worksheets/Feestdagen/usedRange`);nationals=(data.values||[]).slice(1).filter(r=>r[0]&&r[1]).map((r,i)=>({row:i+2,date:String(r[0]).slice(0,10),name:String(r[1])})).filter(h=>/^\d{4}-\d{2}-\d{2}$/.test(h.date)).sort((a,b)=>a.date.localeCompare(b.date));}
+async function addNational(){const date=document.getElementById('nat-date').value;const name=document.getElementById('nat-name').value.trim();if(!date||!name){toast('Vul datum en naam in.');return;}if(nationals.find(h=>h.date===date)){toast('Er staat al een feestdag op deze datum.');return;}setSyncStatus('busy','Opslaan…');try{await xlPatch(`/worksheets/Feestdagen/range(address='A${nationals.length+2}:B${nationals.length+2}')`,{values:[[date,name]]});document.getElementById('nat-date').value='';document.getElementById('nat-name').value='';await loadAll();toast('Toegevoegd: '+name);}catch(e){setSyncStatus('err','Fout');toast('Fout: '+e.message);}}
+async function deleteNational(row){if(!confirm('Feestdag verwijderen?'))return;setSyncStatus('busy','Verwijderen…');try{await xlPost(`/worksheets/Feestdagen/range(address='A${row}:B${row}')/delete`,{shift:'Up'});await loadAll();toast('Verwijderd');}catch(e){try{await xlPatch(`/worksheets/Feestdagen/range(address='A${row}:B${row}')`,{values:[['','']]});await loadAll();toast('Verwijderd');}catch(e2){setSyncStatus('err','Fout');toast('Fout: '+e2.message);}}}
 
-async function seedNationals() {
-  const rows = [['Datum','Naam'], ...DEFAULT_NATIONALS];
-  await xlPatch(`/worksheets/Feestdagen/range(address='A1:B${rows.length}')`, { values: rows });
-  const data = await xlGet(`/worksheets/Feestdagen/usedRange`);
-  nationals = (data.values||[]).slice(1).filter(r=>r[0]&&r[1])
-    .map((r,i)=>({row:i+2,date:String(r[0]).slice(0,10),name:String(r[1])}))
-    .filter(h=>/^\d{4}-\d{2}-\d{2}$/.test(h.date))
-    .sort((a,b)=>a.date.localeCompare(b.date));
-}
+// ── schools ──
+async function loadSchools(){try{const data=await xlGet(`/worksheets/Vakanties/usedRange`);schools=(data.values||[]).slice(1).filter(r=>r[0]&&r[1]&&r[2]).map((r,i)=>({row:i+2,name:String(r[0]),from:String(r[1]).slice(0,10),to:String(r[2]).slice(0,10)})).filter(s=>/^\d{4}-\d{2}-\d{2}$/.test(s.from)&&/^\d{4}-\d{2}-\d{2}$/.test(s.to)).sort((a,b)=>a.from.localeCompare(b.from));}catch(e){await ensureSheet('Vakanties',['Naam','Van','Tot']);schools=[];}}
+async function addSchool(){const name=document.getElementById('sch-name').value.trim();const from=document.getElementById('sch-from').value;const to=document.getElementById('sch-to').value;if(!name||!from||!to){toast('Vul naam, startdatum en einddatum in.');return;}if(from>to){toast('Einddatum moet na startdatum liggen.');return;}setSyncStatus('busy','Opslaan…');try{await xlPatch(`/worksheets/Vakanties/range(address='A${schools.length+2}:C${schools.length+2}')`,{values:[[name,from,to]]});document.getElementById('sch-name').value='';document.getElementById('sch-from').value='';document.getElementById('sch-to').value='';document.getElementById('sch-preview').textContent='';await loadAll();toast('Toegevoegd: '+name);}catch(e){setSyncStatus('err','Fout');toast('Fout: '+e.message);}}
+async function deleteSchool(row){if(!confirm('Schoolvakantie verwijderen?'))return;setSyncStatus('busy','Verwijderen…');try{await xlPost(`/worksheets/Vakanties/range(address='A${row}:C${row}')/delete`,{shift:'Up'});await loadAll();toast('Verwijderd');}catch(e){try{await xlPatch(`/worksheets/Vakanties/range(address='A${row}:C${row}')`,{values:[['','','']]});await loadAll();toast('Verwijderd');}catch(e2){setSyncStatus('err','Fout');toast('Fout: '+e2.message);}}}
+function updateSchoolPreview(){const from=document.getElementById('sch-from').value,to=document.getElementById('sch-to').value;const prev=document.getElementById('sch-preview');if(!from||!to||from>to){prev.textContent='';return;}const days=daysBetween(from,to);prev.textContent=`${days} dag${days!==1?'en':''} geselecteerd  (${fmtDate(from)} t/m ${fmtDate(to)})`;}
 
-async function addNational() {
-  const date = document.getElementById('nat-date').value;
-  const name = document.getElementById('nat-name').value.trim();
-  if (!date||!name) { toast('Vul datum en naam in.'); return; }
-  if (nationals.find(h=>h.date===date)) { toast('Er staat al een feestdag op deze datum.'); return; }
+// ── locations ──
+async function loadLocations(){try{const data=await xlGet(`/worksheets/Locaties/usedRange`);locations=(data.values||[]).slice(1).filter(r=>r[0]&&r[1]).map((r,i)=>({row:i+2,id:String(r[0]),name:String(r[1]),city:String(r[2]||'')}));}catch(e){await ensureSheet('Locaties',['ID','Naam','Stad']);locations=[];}}
+async function addLocation(){const name=document.getElementById('loc-name').value.trim();const city=document.getElementById('loc-city').value.trim();if(!name){toast('Vul een naam in voor de locatie.');return;}const id='LOC-'+Date.now();setSyncStatus('busy','Opslaan…');try{const nr=locations.length+2;await xlPatch(`/worksheets/Locaties/range(address='A${nr}:C${nr}')`,{values:[[id,name,city]]});document.getElementById('loc-name').value='';document.getElementById('loc-city').value='';await loadAll();toast('Locatie toegevoegd: '+name);}catch(e){setSyncStatus('err','Fout');toast('Fout: '+e.message);}}
+async function deleteLocation(row,locId){if(!confirm('Locatie en alle bijbehorende zalen verwijderen?'))return;setSyncStatus('busy','Verwijderen…');try{const rd=rooms.filter(r=>r.locatieId===locId).sort((a,b)=>b.row-a.row);for(const rm of rd){try{await xlPost(`/worksheets/Zalen/range(address='A${rm.row}:D${rm.row}')/delete`,{shift:'Up'});}catch(e){await xlPatch(`/worksheets/Zalen/range(address='A${rm.row}:D${rm.row}')`,{values:[['','','','']]});}}await xlPost(`/worksheets/Locaties/range(address='A${row}:C${row}')/delete`,{shift:'Up'});await loadAll();toast('Locatie verwijderd');}catch(e){setSyncStatus('err','Fout');toast('Fout: '+e.message);}}
+async function loadRooms(){try{const data=await xlGet(`/worksheets/Zalen/usedRange`);rooms=(data.values||[]).slice(1).filter(r=>r[0]&&r[1]&&r[2]).map((r,i)=>({row:i+2,id:String(r[0]),locatieId:String(r[1]),name:String(r[2]),maxKandidaten:parseInt(r[3])||0}));}catch(e){await ensureSheet('Zalen',['ID','LocatieID','Naam','MaxKandidaten']);rooms=[];}}
+async function addRoom(locId){const nEl=document.getElementById('room-name-'+locId),cEl=document.getElementById('room-cap-'+locId);const name=nEl.value.trim(),cap=parseInt(cEl.value)||0;if(!name){toast('Vul een naam in voor de zaal.');return;}if(cap<1){toast('Vul een geldig maximum aantal kandidaten in.');return;}const id='ZAAL-'+Date.now();setSyncStatus('busy','Opslaan…');try{const nr=rooms.length+2;await xlPatch(`/worksheets/Zalen/range(address='A${nr}:D${nr}')`,{values:[[id,locId,name,cap]]});nEl.value='';cEl.value='';await loadAll();toast('Zaal toegevoegd: '+name);}catch(e){setSyncStatus('err','Fout');toast('Fout: '+e.message);}}
+async function deleteRoom(row){if(!confirm('Zaal verwijderen?'))return;setSyncStatus('busy','Verwijderen…');try{await xlPost(`/worksheets/Zalen/range(address='A${row}:D${row}')/delete`,{shift:'Up'});await loadAll();toast('Zaal verwijderd');}catch(e){try{await xlPatch(`/worksheets/Zalen/range(address='A${row}:D${row}')`,{values:[['','','','']]});await loadAll();toast('Zaal verwijderd');}catch(e2){setSyncStatus('err','Fout');toast('Fout: '+e2.message);}}}
+
+// ══════════════════════════════════════════════════════════════════
+//  DOCENTEN
+// ══════════════════════════════════════════════════════════════════
+async function loadDocenten(){try{const data=await xlGet(`/worksheets/Docenten/usedRange`);docenten=(data.values||[]).slice(1).filter(r=>r[0]&&r[1]).map((r,i)=>({row:i+2,id:String(r[0]),naam:String(r[1]),afkorting:String(r[2]||''),woonplaats:String(r[3]||'')})).sort((a,b)=>a.naam.localeCompare(b.naam));}catch(e){await ensureSheet('Docenten',['ID','Naam','Afkorting','Woonplaats']);docenten=[];}}
+
+async function loadDocentReistijd(){try{const data=await xlGet(`/worksheets/DocentReistijd/usedRange`);docentReistijd=(data.values||[]).slice(1).filter(r=>r[0]&&r[1]&&r[2]).map((r,i)=>({row:i+2,id:String(r[0]),docentId:String(r[1]),locatieId:String(r[2]),reistijdUren:parseFloat(r[3])||0}));}catch(e){await ensureSheet('DocentReistijd',['ID','DocentID','LocatieID','ReistijdUren']);docentReistijd=[];}}
+
+async function loadDocentKoppelingen(){try{const data=await xlGet(`/worksheets/DocentKoppeling/usedRange`);docentKoppelingen=(data.values||[]).slice(1).filter(r=>r[0]&&r[1]&&r[2]&&r[3]).map((r,i)=>({row:i+2,id:String(r[0]),docentId:String(r[1]),opleidingId:String(r[2]),structuurId:String(r[3]),dagen:String(r[4]||'')}));}catch(e){await ensureSheet('DocentKoppeling',['ID','DocentID','OpleidingID','StructuurID','Dagen']);docentKoppelingen=[];}}
+
+function openAddDocent(){document.getElementById('add-docent-form').style.display='block';document.getElementById('doc-naam').focus();}
+function closeAddDocent(){document.getElementById('add-docent-form').style.display='none';['doc-naam','doc-afk','doc-plaats'].forEach(id=>document.getElementById(id).value='');}
+
+async function addDocent(){
+  const naam=document.getElementById('doc-naam').value.trim();
+  const afk=document.getElementById('doc-afk').value.trim().toUpperCase();
+  const plaats=document.getElementById('doc-plaats').value.trim();
+  if(!naam){toast('Vul een naam in.');return;}
+  if(!afk){toast('Vul een afkorting in.');return;}
+  if(docenten.find(d=>d.afkorting===afk)){toast(`Afkorting "${afk}" is al in gebruik.`);return;}
+  const id='DOC-'+Date.now();
   setSyncStatus('busy','Opslaan…');
-  try {
-    const nextRow = nationals.length + 2;
-    await xlPatch(`/worksheets/Feestdagen/range(address='A${nextRow}:B${nextRow}')`, { values:[[date,name]] });
-    document.getElementById('nat-date').value='';
-    document.getElementById('nat-name').value='';
+  try{
+    const nr=docenten.length+2;
+    await xlPatch(`/worksheets/Docenten/range(address='A${nr}:D${nr}')`,{values:[[id,naam,afk,plaats]]});
+    closeAddDocent();
     await loadAll();
-    toast('Toegevoegd: ' + name);
-  } catch(e) { setSyncStatus('err','Fout'); toast('Fout: '+e.message); }
+    toast('Docent toegevoegd: '+naam);
+  }catch(e){setSyncStatus('err','Fout');toast('Fout: '+e.message);}
 }
 
-async function deleteNational(row) {
-  if (!confirm('Feestdag verwijderen?')) return;
+async function deleteDocent(docentId,row){
+  if(!confirm('Docent verwijderen? Alle koppelingen worden ook verwijderd.'))return;
   setSyncStatus('busy','Verwijderen…');
-  try {
-    await xlPost(`/worksheets/Feestdagen/range(address='A${row}:B${row}')/delete`,{shift:'Up'});
-    await loadAll(); toast('Verwijderd');
-  } catch(e) {
-    try {
-      await xlPatch(`/worksheets/Feestdagen/range(address='A${row}:B${row}')`,{values:[['','']]});
-      await loadAll(); toast('Verwijderd');
-    } catch(e2) { setSyncStatus('err','Fout'); toast('Fout: '+e2.message); }
-  }
+  try{
+    // remove koppelingen (high rows first)
+    const kops=docentKoppelingen.filter(k=>k.docentId===docentId).sort((a,b)=>b.row-a.row);
+    for(const k of kops){try{await xlPost(`/worksheets/DocentKoppeling/range(address='A${k.row}:E${k.row}')/delete`,{shift:'Up'});}catch(e){await xlPatch(`/worksheets/DocentKoppeling/range(address='A${k.row}:E${k.row}')`,{values:[['','','','','']]});}}
+    // remove reistijden
+    const rts=docentReistijd.filter(r=>r.docentId===docentId).sort((a,b)=>b.row-a.row);
+    for(const rt of rts){try{await xlPost(`/worksheets/DocentReistijd/range(address='A${rt.row}:D${rt.row}')/delete`,{shift:'Up'});}catch(e){await xlPatch(`/worksheets/DocentReistijd/range(address='A${rt.row}:D${rt.row}')`,{values:[['','','','']]});}}
+    // remove docent
+    await xlPost(`/worksheets/Docenten/range(address='A${row}:D${row}')/delete`,{shift:'Up'});
+    await loadAll();
+    toast('Docent verwijderd');
+  }catch(e){setSyncStatus('err','Fout');toast('Fout: '+e.message);}
 }
 
-async function loadSchools() {
-  try {
-    const data = await xlGet(`/worksheets/Vakanties/usedRange`);
-    schools = (data.values||[]).slice(1).filter(r=>r[0]&&r[1]&&r[2])
-      .map((r,i)=>({row:i+2,name:String(r[0]),from:String(r[1]).slice(0,10),to:String(r[2]).slice(0,10)}))
-      .filter(s=>/^\d{4}-\d{2}-\d{2}$/.test(s.from)&&/^\d{4}-\d{2}-\d{2}$/.test(s.to))
-      .sort((a,b)=>a.from.localeCompare(b.from));
-  } catch(e) {
-    try {
-      await xlPost(`/worksheets/add`,{name:'Vakanties'});
-      await xlPatch(`/worksheets/Vakanties/range(address='A1:C1')`,{values:[['Naam','Van','Tot']]});
-      schools=[];
-    } catch(e2) { throw new Error('Vakanties: '+e2.message); }
-  }
-}
-
-async function addSchool() {
-  const name=document.getElementById('sch-name').value.trim();
-  const from=document.getElementById('sch-from').value;
-  const to=document.getElementById('sch-to').value;
-  if (!name||!from||!to) { toast('Vul naam, startdatum en einddatum in.'); return; }
-  if (from>to) { toast('Einddatum moet na startdatum liggen.'); return; }
+// ── save travel time for one docent/location pair ──────────────────
+async function saveReistijd(docentId,locatieId,uren){
+  const existing=docentReistijd.find(r=>r.docentId===docentId&&r.locatieId===locatieId);
   setSyncStatus('busy','Opslaan…');
-  try {
-    const nextRow=schools.length+2;
-    await xlPatch(`/worksheets/Vakanties/range(address='A${nextRow}:C${nextRow}')`,{values:[[name,from,to]]});
-    document.getElementById('sch-name').value='';
-    document.getElementById('sch-from').value='';
-    document.getElementById('sch-to').value='';
-    document.getElementById('sch-preview').textContent='';
-    await loadAll();
-    toast('Toegevoegd: '+name);
-  } catch(e) { setSyncStatus('err','Fout'); toast('Fout: '+e.message); }
+  try{
+    if(existing){
+      await xlPatch(`/worksheets/DocentReistijd/range(address='D${existing.row}')`,{values:[[uren]]});
+    }else{
+      const id='RT-'+Date.now();
+      const nr=docentReistijd.length+2;
+      await xlPatch(`/worksheets/DocentReistijd/range(address='A${nr}:D${nr}')`,{values:[[id,docentId,locatieId,uren]]});
+    }
+    await loadDocentReistijd();
+    setSyncStatus('ok','Opgeslagen');
+  }catch(e){setSyncStatus('err','Fout');toast('Fout: '+e.message);}
 }
 
-async function deleteSchool(row) {
-  if (!confirm('Schoolvakantie verwijderen?')) return;
-  setSyncStatus('busy','Verwijderen…');
-  try {
-    await xlPost(`/worksheets/Vakanties/range(address='A${row}:C${row}')/delete`,{shift:'Up'});
-    await loadAll(); toast('Verwijderd');
-  } catch(e) {
-    try {
-      await xlPatch(`/worksheets/Vakanties/range(address='A${row}:C${row}')`,{values:[['','','']]});
-      await loadAll(); toast('Verwijderd');
-    } catch(e2) { setSyncStatus('err','Fout'); toast('Fout: '+e2.message); }
+// ── save day-toggles for a koppeling ──────────────────────────────
+async function saveKoppelingDagen(docentId,structuurId,dagen){
+  const existing=docentKoppelingen.find(k=>k.docentId===docentId&&k.structuurId===structuurId);
+  const struct=oplStructuren.find(s=>s.id===structuurId);
+  if(!struct)return;
+  setSyncStatus('busy','Opslaan…');
+  try{
+    if(existing){
+      await xlPatch(`/worksheets/DocentKoppeling/range(address='E${existing.row}')`,{values:[[dagen]]});
+    }else{
+      const id='KOP-'+Date.now();
+      const nr=docentKoppelingen.length+2;
+      await xlPatch(`/worksheets/DocentKoppeling/range(address='A${nr}:E${nr}')`,{values:[[id,docentId,struct.opleidingId,structuurId,dagen]]});
+    }
+    await loadDocentKoppelingen();
+    setSyncStatus('ok','Opgeslagen');
+    renderDocentTable();
+  }catch(e){setSyncStatus('err','Fout');toast('Fout: '+e.message);}
+}
+
+// ── render docent table ────────────────────────────────────────────
+function renderDocentTable(){
+  const tbody=document.getElementById('docent-tbody');
+  const empty=document.getElementById('docent-empty');
+  const q=(document.getElementById('docent-search').value||'').toLowerCase();
+  tbody.innerHTML='';
+
+  const filtered=docenten.filter(d=>
+    d.naam.toLowerCase().includes(q)||
+    d.afkorting.toLowerCase().includes(q)||
+    d.woonplaats.toLowerCase().includes(q)
+  );
+
+  document.getElementById('docent-count').textContent=filtered.length+' van '+docenten.length;
+
+  if(filtered.length===0){empty.style.display='block';return;}
+  empty.style.display='none';
+
+  filtered.forEach(doc=>{
+    const myKoppelingen=docentKoppelingen.filter(k=>k.docentId===doc.id);
+    const oplNames=myKoppelingen.map(k=>{const o=opleidingen.find(o=>o.id===k.opleidingId);return o?o.name:'';}).filter(Boolean);
+    const uniqueOpls=[...new Set(oplNames)];
+
+    // wrapper row
+    const tr=document.createElement('tr');
+    tr.className='docent-row';
+    tr.id='drow-'+doc.id;
+    tr.innerHTML=`
+      <td>
+        <div class="docent-main" onclick="toggleDocentRow('${doc.id}')">
+          <div class="docent-cell" style="font-size:.75rem;color:#bbb;padding-right:4px">&#9660;</div>
+        </div>
+      </td>
+      <td colspan="5" style="padding:0">
+        <div class="docent-main" onclick="toggleDocentRow('${doc.id}')">
+          <div class="docent-cell" style="flex:1;min-width:140px">${esc(doc.naam)}</div>
+          <div class="docent-cell"><span class="abr-badge">${esc(doc.afkorting)}</span></div>
+          <div class="docent-cell" style="color:#777;font-family:'DM Mono',monospace;font-size:.7rem">${esc(doc.woonplaats)}</div>
+          <div class="docent-cell" style="font-family:'DM Mono',monospace;font-size:.65rem;color:#999;flex:1">${uniqueOpls.length>0?uniqueOpls.map(n=>`<span style="margin-right:5px">${esc(n)}</span>`).join(''):'—'}</div>
+          <div class="docent-cell" style="text-align:right"><button class="btn danger sm" onclick="event.stopPropagation();deleteDocent('${doc.id}',${doc.row})">Verwijder</button></div>
+        </div>
+        <div class="docent-detail" id="ddetail-${doc.id}">
+          ${buildDocentDetailHTML(doc)}
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function toggleDocentRow(docId){
+  const row=document.getElementById('drow-'+docId);
+  const detail=document.getElementById('ddetail-'+docId);
+  const isOpen=row.classList.toggle('open');
+  // rebuild detail HTML when opening to get fresh state
+  if(isOpen) detail.innerHTML=buildDocentDetailHTML(docenten.find(d=>d.id===docId));
+}
+
+function buildDocentDetailHTML(doc){
+  if(!doc)return'';
+  const myKoppelingen=docentKoppelingen.filter(k=>k.docentId===doc.id);
+
+  // ── course links ──
+  let koppHTML='';
+  if(opleidingen.length===0){
+    koppHTML='<p style="font-family:\'DM Mono\',monospace;font-size:.68rem;color:#bbb">Nog geen opleidingen aangemaakt.</p>';
+  }else{
+    koppHTML='<div class="koppeling-list">';
+    opleidingen.forEach(opl=>{
+      const structs=oplStructuren.filter(s=>s.opleidingId===opl.id);
+      structs.forEach(sv=>{
+        const kop=myKoppelingen.find(k=>k.structuurId===sv.id);
+        const activeDagen=kop?kop.dagen.split(',').map(Number).filter(Boolean):[];
+        const dagBadge=activeDagen.length>0?`Dag ${activeDagen.join(', ')}`:activeDagen.length===0&&kop?'Geen dagen':'Niet gekoppeld';
+        const itemId=`kop-${doc.id}-${sv.id}`;
+        const togglesHTML=sv.dagen.map(d=>{
+          const on=activeDagen.includes(d.dag);
+          return `<span class="dag-toggle${on?' on':''}" onclick="toggleDag('${doc.id}','${sv.id}',${d.dag},this)">${d.dag}</span>`;
+        }).join('');
+
+        koppHTML+=`
+          <div class="koppeling-item" id="${itemId}">
+            <div class="koppeling-header" onclick="document.getElementById('${itemId}').classList.toggle('open')">
+              <span class="koppeling-course">${esc(opl.name)}</span>
+              <span style="font-family:'DM Mono',monospace;font-size:.6rem;color:#999">${esc(sv.versienaam)}</span>
+              <span class="koppeling-days-badge">${esc(dagBadge)}</span>
+              <span class="koppeling-chevron">&#9660;</span>
+            </div>
+            <div class="koppeling-body">
+              <p style="font-family:'DM Mono',monospace;font-size:.62rem;color:#999;margin-bottom:8px">Selecteer de dagen die deze docent geeft:</p>
+              <div class="dag-toggle-grid">${togglesHTML}</div>
+            </div>
+          </div>`;
+      });
+    });
+    koppHTML+='</div>';
+    if(oplStructuren.length===0)koppHTML='<p style="font-family:\'DM Mono\',monospace;font-size:.68rem;color:#bbb">Geen structuren gevonden. Voeg eerst opleidingen en structuren toe.</p>';
   }
+
+  // ── travel times ──
+  let reisHTML='';
+  if(locations.length===0){
+    reisHTML='<p style="font-family:\'DM Mono\',monospace;font-size:.68rem;color:#bbb">Nog geen locaties aangemaakt.</p>';
+  }else{
+    reisHTML='<div class="reistijd-grid">';
+    locations.forEach(loc=>{
+      const rt=docentReistijd.find(r=>r.docentId===doc.id&&r.locatieId===loc.id);
+      const val=rt?rt.reistijdUren:'';
+      reisHTML+=`
+        <div class="reistijd-row">
+          <span class="reistijd-loc">${esc(loc.name)}${loc.city?` <span style="color:#bbb">(${esc(loc.city)})</span>`:''}</span>
+          <input class="reistijd-input" type="number" min="0" max="24" step="0.5" value="${val}"
+            placeholder="uren"
+            onchange="saveReistijd('${doc.id}','${loc.id}',parseFloat(this.value)||0)"
+            title="Reistijd in uren">
+          <span class="reistijd-unit">uur</span>
+        </div>`;
+    });
+    reisHTML+='</div>';
+  }
+
+  return `
+    <div class="docent-detail-grid">
+      <div>
+        <div class="detail-section-title">Opleidingen &amp; dagen</div>
+        ${koppHTML}
+      </div>
+      <div>
+        <div class="detail-section-title">Reistijd naar locaties</div>
+        ${reisHTML}
+      </div>
+    </div>`;
 }
 
-function updateSchoolPreview() {
-  const from=document.getElementById('sch-from').value;
-  const to=document.getElementById('sch-to').value;
-  const prev=document.getElementById('sch-preview');
-  if (!from||!to||from>to) { prev.textContent=''; return; }
-  const days=daysBetween(from,to);
-  prev.textContent=`${days} dag${days!==1?'en':''} geselecteerd  (${fmtDate(from)} t/m ${fmtDate(to)})`;
+// toggle a single day in a koppeling
+function toggleDag(docentId,structuurId,dagNr,el){
+  el.classList.toggle('on');
+  // collect all active days from the DOM
+  const allToggles=el.closest('.dag-toggle-grid').querySelectorAll('.dag-toggle');
+  const dagen=Array.from(allToggles).filter(t=>t.classList.contains('on')).map(t=>parseInt(t.textContent)).join(',');
+  // update badge in header
+  const badge=el.closest('.koppeling-item').querySelector('.koppeling-days-badge');
+  if(badge){
+    const nums=dagen?dagen.split(',').map(Number):[]; 
+    badge.textContent=nums.length>0?`Dag ${nums.join(', ')}`:'Niet gekoppeld';
+  }
+  saveKoppelingDagen(docentId,structuurId,dagen);
 }
+
+// ══════════════════════════════════════════════════════════════════
+//  OPLEIDINGEN
+// ══════════════════════════════════════════════════════════════════
+async function loadOpleidingen(){
+  try{
+    const data=await xlGet(`/worksheets/Opleidingen/usedRange`);
+    opleidingen=(data.values||[]).slice(1).filter(r=>r[0]&&r[1]).map((r,i)=>({row:i+2,id:String(r[0]),name:String(r[1]),aantalDagen:parseInt(r[2])||0}));
+    if(opleidingen.length===0){
+      const id='OPL-'+Date.now();
+      await xlPatch(`/worksheets/Opleidingen/range(address='A2:C2')`,{values:[[id,'Voorbeeldopleiding',5]]});
+      const structId='STRUCT-'+Date.now();
+      const dagJson=JSON.stringify([1,2,3,4,5].map(i=>({dag:i,onderwerp:'Dag '+i})));
+      await ensureSheet('OplStructuur',['ID','OpleidingID','Versienaam','IsBase','AantalDagen','DagJSON']);
+      await xlPatch(`/worksheets/OplStructuur/range(address='A2:F2')`,{values:[[structId,id,'Basisstructuur','ja',5,dagJson]]});
+      const d2=await xlGet(`/worksheets/Opleidingen/usedRange`);
+      opleidingen=(d2.values||[]).slice(1).filter(r=>r[0]&&r[1]).map((r,i)=>({row:i+2,id:String(r[0]),name:String(r[1]),aantalDagen:parseInt(r[2])||0}));
+    }
+  }catch(e){await ensureSheet('Opleidingen',['ID','Naam','AantalDagen']);opleidingen=[];}
+}
+
+async function loadOplStructuren(){
+  try{
+    const data=await xlGet(`/worksheets/OplStructuur/usedRange`);
+    oplStructuren=(data.values||[]).slice(1).filter(r=>r[0]&&r[1]).map((r,i)=>({row:i+2,id:String(r[0]),opleidingId:String(r[1]),versienaam:String(r[2]),isBase:String(r[3]).toLowerCase()==='ja',aantalDagen:parseInt(r[4])||0,dagen:JSON.parse(String(r[5]||'[]'))}));
+  }catch(e){await ensureSheet('OplStructuur',['ID','OpleidingID','Versienaam','IsBase','AantalDagen','DagJSON']);oplStructuren=[];}
+}
+
+async function confirmAddOpleiding(){
+  const name=document.getElementById('new-opl-name').value.trim();
+  const nDays=parseInt(document.getElementById('new-opl-days').value)||0;
+  if(!name){toast('Vul een naam in voor de opleiding.');return;}
+  if(nDays<1){toast('Vul een geldig aantal contactdagen in.');return;}
+  const dagen=getNewOplDagen();const id='OPL-'+Date.now();const structId='STRUCT-'+Date.now();
+  setSyncStatus('busy','Opslaan…');
+  try{
+    await xlPatch(`/worksheets/Opleidingen/range(address='A${opleidingen.length+2}:C${opleidingen.length+2}')`,{values:[[id,name,nDays]]});
+    await xlPatch(`/worksheets/OplStructuur/range(address='A${oplStructuren.length+2}:F${oplStructuren.length+2}')`,{values:[[structId,id,'Basisstructuur','ja',nDays,JSON.stringify(dagen)]]});
+    closeAddOpl();await loadAll();toast('Opleiding aangemaakt: '+name);
+  }catch(e){setSyncStatus('err','Fout');toast('Fout: '+e.message);}
+}
+
+async function saveStructureEdit(structId){
+  const struct=oplStructuren.find(s=>s.id===structId);if(!struct)return;
+  const dagen=struct.dagen.map((d,i)=>{const inp=document.getElementById(`struct-day-${structId}-${i}`);return{dag:d.dag,onderwerp:inp?inp.value.trim():d.onderwerp};});
+  setSyncStatus('busy','Opslaan…');
+  try{await xlPatch(`/worksheets/OplStructuur/range(address='F${struct.row}')`,{values:[[JSON.stringify(dagen)]]});await loadAll();toast('Structuur opgeslagen');}
+  catch(e){setSyncStatus('err','Fout');toast('Fout: '+e.message);}
+}
+
+async function confirmAddStructure(){
+  if(!currentOplId)return;
+  const name=document.getElementById('new-struct-name').value.trim();
+  const nDays=parseInt(document.getElementById('new-struct-days').value)||0;
+  if(!name){toast('Vul een versienaam in.');return;}if(nDays<1){toast('Vul een geldig aantal contactdagen in.');return;}
+  const id='STRUCT-'+Date.now();
+  setSyncStatus('busy','Opslaan…');
+  try{
+    await xlPatch(`/worksheets/OplStructuur/range(address='A${oplStructuren.length+2}:F${oplStructuren.length+2}')`,{values:[[id,currentOplId,name,'nee',nDays,JSON.stringify(getNewStructDagen())]]});
+    document.getElementById('new-struct-name').value='';document.getElementById('new-struct-days').value=5;
+    toggleAddStructForm(true);await loadAll();toast('Structuur toegevoegd: '+name);
+  }catch(e){setSyncStatus('err','Fout');toast('Fout: '+e.message);}
+}
+
+function openAddOpl(){document.getElementById('new-opl-name').value='';document.getElementById('new-opl-days').value=5;syncNewDayRows();document.getElementById('add-opl-overlay').style.display='flex';}
+function closeAddOpl(){document.getElementById('add-opl-overlay').style.display='none';}
+function syncNewDayRows(){const n=parseInt(document.getElementById('new-opl-days').value)||0;const list=document.getElementById('new-opl-days-list');const cur=list.querySelectorAll('.day-row').length;if(n>cur){for(let i=cur+1;i<=n;i++){const row=document.createElement('div');row.className='day-row';row.innerHTML=`<span class="day-num">Dag ${i}</span><input type="text" placeholder="Onderwerp dag ${i}" value="Dag ${i}">`;list.appendChild(row);}}else{for(let i=cur;i>n;i--)list.removeChild(list.lastChild);}list.querySelectorAll('.day-row').forEach((r,i)=>{r.querySelector('.day-num').textContent=`Dag ${i+1}`;});}
+function getNewOplDagen(){return Array.from(document.getElementById('new-opl-days-list').querySelectorAll('.day-row')).map((r,i)=>({dag:i+1,onderwerp:r.querySelector('input').value.trim()||`Dag ${i+1}`}));}
+
+let addStructFormOpen=false;
+function toggleAddStructForm(forceClose=false){const form=document.getElementById('add-struct-form');if(forceClose){addStructFormOpen=false;form.classList.remove('visible');return;}addStructFormOpen=!addStructFormOpen;form.classList.toggle('visible',addStructFormOpen);if(addStructFormOpen)syncNewStructDayRows();}
+function syncNewStructDayRows(){const n=parseInt(document.getElementById('new-struct-days').value)||0;const list=document.getElementById('add-struct-days-list');const cur=list.querySelectorAll('.day-row').length;if(n>cur){for(let i=cur+1;i<=n;i++){const row=document.createElement('div');row.className='day-row';row.innerHTML=`<span class="day-num">Dag ${i}</span><input type="text" placeholder="Onderwerp dag ${i}" value="Dag ${i}">`;list.appendChild(row);}}else{for(let i=cur;i>n;i--)list.removeChild(list.lastChild);}list.querySelectorAll('.day-row').forEach((r,i)=>{r.querySelector('.day-num').textContent=`Dag ${i+1}`;});}
+function getNewStructDagen(){return Array.from(document.getElementById('add-struct-days-list').querySelectorAll('.day-row')).map((r,i)=>({dag:i+1,onderwerp:r.querySelector('input').value.trim()||`Dag ${i+1}`}));}
+
+function renderOplList(){const list=document.getElementById('opl-list');const empty=document.getElementById('opl-empty');list.innerHTML='';if(opleidingen.length===0){empty.style.display='block';return;}empty.style.display='none';opleidingen.forEach(opl=>{const card=document.createElement('div');card.className='opl-card';const nStructs=oplStructuren.filter(s=>s.opleidingId===opl.id).length;card.innerHTML=`<div class="opl-card-name">${esc(opl.name)}</div><div class="opl-card-meta">${opl.aantalDagen} contactdagen</div><div class="opl-card-meta" style="margin-left:12px">${nStructs} structuur${nStructs!==1?'versies':'versie'}</div><div class="opl-card-arrow">&#8594;</div>`;card.onclick=()=>openOplDetail(opl.id);list.appendChild(card);});}
+
+function openOplDetail(oplId){currentOplId=oplId;renderOplDetail(oplId);showPage('opl-detail',document.getElementById('nav-opleidingen'));showSubtab('overzicht');}
+function renderOplDetail(oplId){const opl=opleidingen.find(o=>o.id===oplId);if(!opl)return;document.getElementById('opl-detail-title').textContent=opl.name;renderStructVersions(oplId);}
+function renderStructVersions(oplId){const list=document.getElementById('struct-version-list');list.innerHTML='';const versions=oplStructuren.filter(s=>s.opleidingId===oplId).sort((a,b)=>b.isBase-a.isBase);versions.forEach(sv=>{const card=document.createElement('div');card.className='struct-version-card';const header=document.createElement('div');header.className='struct-version-header';header.innerHTML=`<span class="struct-version-name">${esc(sv.versienaam)}</span><span class="struct-version-badge ${sv.isBase?'base':'alt'}">${sv.isBase?'Basisstructuur':'Alternatief'}</span><span style="font-family:'DM Mono',monospace;font-size:.6rem;color:#999;margin-left:8px">${sv.aantalDagen} dagen</span><span class="struct-version-chevron">&#9660;</span>`;header.onclick=()=>card.classList.toggle('open');card.appendChild(header);const body=document.createElement('div');body.className='struct-version-body';const tbl=document.createElement('table');tbl.className='struct-days-table';tbl.innerHTML=`<thead><tr><th>Dag</th><th>Onderwerp / activiteit</th></tr></thead>`;const tbody=document.createElement('tbody');sv.dagen.forEach((d,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td>Dag ${d.dag}</td><td class="editable"><input id="struct-day-${sv.id}-${i}" value="${esc(d.onderwerp||'')}"></td>`;tbody.appendChild(tr);});tbl.appendChild(tbody);body.appendChild(tbl);const saveRow=document.createElement('div');saveRow.style.cssText='display:flex;gap:8px;margin-top:10px';saveRow.innerHTML=`<button class="btn primary sm" onclick="saveStructureEdit('${sv.id}')">Wijzigingen opslaan</button>`;body.appendChild(saveRow);card.appendChild(body);list.appendChild(card);});}
+
+function showSubtab(id){['overzicht','structuur'].forEach(t=>{document.getElementById('subtab-'+t).classList.toggle('active',t===id);document.getElementById('opl-sub-'+t).classList.toggle('active',t===id);});}
+
+// ── render locations ──
+function renderLocations(){const list=document.getElementById('location-list');const empty=document.getElementById('loc-empty');list.innerHTML='';if(locations.length===0){empty.style.display='block';return;}empty.style.display='none';locations.forEach(loc=>{const locRooms=rooms.filter(r=>r.locatieId===loc.id);const card=document.createElement('div');card.className='location-card';const totalCap=locRooms.reduce((s,r)=>s+r.maxKandidaten,0);const meta=locRooms.length===0?'Geen zalen':`${locRooms.length} zaal${locRooms.length!==1?'en':''} · ${totalCap} kandidaten totaal`;const header=document.createElement('div');header.className='location-header';header.innerHTML=`<span class="location-name">${esc(loc.name)}</span>${loc.city?`<span class="location-meta">${esc(loc.city)}</span>`:''}<span class="location-meta" style="margin-left:8px">${esc(meta)}</span><button class="btn danger sm" onclick="event.stopPropagation();deleteLocation(${loc.row},'${loc.id}')" style="margin-left:8px">Verwijder</button><span class="location-chevron">&#9660;</span>`;header.onclick=()=>card.classList.toggle('open');card.appendChild(header);const body=document.createElement('div');body.className='location-body';if(locRooms.length>0){const tbl=document.createElement('table');tbl.className='rooms-table';tbl.innerHTML=`<thead><tr><th>Zaal</th><th>Max. kandidaten</th><th></th></tr></thead>`;const tbody=document.createElement('tbody');locRooms.forEach(rm=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${esc(rm.name)}</td><td><span class="cap-badge"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>${rm.maxKandidaten}</span></td><td style="text-align:right"><button class="btn danger sm" onclick="deleteRoom(${rm.row})">Verwijder</button></td>`;tbody.appendChild(tr);});tbl.appendChild(tbody);body.appendChild(tbl);}else{const none=document.createElement('p');none.style.cssText='font-family:\'DM Mono\',monospace;font-size:.68rem;color:#bbb;margin-bottom:14px';none.textContent='Nog geen zalen toegevoegd.';body.appendChild(none);}const addRow=document.createElement('div');addRow.className='add-room-row';addRow.innerHTML=`<div class="field"><label>Naam zaal</label><input type="text" id="room-name-${loc.id}" placeholder="bijv. Zaal A" style="min-width:180px"></div><div class="field"><label>Max. kandidaten</label><input type="number" id="room-cap-${loc.id}" placeholder="bijv. 20" min="1" style="width:110px"></div><button class="btn primary sm" onclick="addRoom('${loc.id}')">+ Zaal toevoegen</button>`;body.appendChild(addRow);card.appendChild(body);list.appendChild(card);});}
 
 // ══════════════════════════════════════════════════════════════════
 //  CALENDAR
 // ══════════════════════════════════════════════════════════════════
-const MONTHS_SHORT = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
-const MONTHS_NL    = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
-const DAYS_NL      = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
-let curY, curM;
-let editingYear = false;
-
-// ── year navigation ───────────────────────────────────────────────
-function changeYear(delta) {
-  curY += delta;
-  syncNav();
-  renderCalendar();
-}
-
-function startYearEdit() {
-  if (editingYear) return;
-  editingYear = true;
-  const display = document.getElementById('year-display');
-  const input = document.createElement('input');
-  input.type = 'number';
-  input.className = 'year-input';
-  input.value = curY;
-  input.min = 1990; input.max = 2100;
-  display.replaceWith(input);
-  input.select();
-
-  function commit() {
-    const val = parseInt(input.value);
-    if (!isNaN(val) && val >= 1990 && val <= 2100) curY = val;
-    editingYear = false;
-    const newDisplay = document.createElement('div');
-    newDisplay.className = 'year-display';
-    newDisplay.id = 'year-display';
-    newDisplay.title = 'Klik op het jaar om direct in te typen';
-    newDisplay.textContent = curY;
-    newDisplay.onclick = startYearEdit;
-    input.replaceWith(newDisplay);
-    syncNav();
-    renderCalendar();
-  }
-
-  input.addEventListener('blur', commit);
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') input.blur();
-    if (e.key === 'Escape') { input.value = curY; input.blur(); }
-  });
-}
-
-// ── month strip ───────────────────────────────────────────────────
-function buildMonthStrip() {
-  const strip = document.getElementById('month-strip');
-  strip.innerHTML = '';
-  MONTHS_SHORT.forEach((m, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'month-btn' + (i === curM ? ' active' : '');
-    btn.textContent = m;
-    btn.onclick = () => { curM = i; syncNav(); renderCalendar(); };
-    strip.appendChild(btn);
-  });
-}
-
-function syncNav() {
-  // update year display (if not in edit mode)
-  const display = document.getElementById('year-display');
-  if (display) display.textContent = curY;
-  // update month strip highlights
-  document.querySelectorAll('.month-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', i === curM);
-  });
-}
-
-function goToday() {
-  const t = new Date();
-  curY = t.getFullYear();
-  curM = t.getMonth();
-  syncNav();
-  renderCalendar();
-}
-
-// ── calendar grid ─────────────────────────────────────────────────
-function buildMaps() {
-  const nat = {};
-  nationals.forEach(h => { nat[h.date] = h.name; });
-  const sch = {};
-  schools.forEach(s => {
-    let d = new Date(s.from+'T00:00:00');
-    const end = new Date(s.to+'T00:00:00');
-    while (d <= end) {
-      const ds = iso(d);
-      if (!sch[ds]) sch[ds] = [];
-      sch[ds].push(s.name);
-      d.setDate(d.getDate()+1);
-    }
-  });
-  return { nat, sch };
-}
-
-function renderCalendar() {
-  const grid   = document.getElementById('cal-grid');
-  const todayS = iso(new Date());
-  const { nat, sch } = buildMaps();
-
-  document.getElementById('cal-title').textContent = MONTHS_NL[curM] + ' ' + curY;
-  grid.innerHTML = '';
-
-  ['ma','di','wo','do','vr','za','zo'].forEach(d => {
-    const el=document.createElement('div'); el.className='cal-dh'; el.textContent=d; grid.appendChild(el);
-  });
-
-  const startDow = (new Date(curY,curM,1).getDay()+6)%7;
-  const prevDim  = new Date(curY,curM,0).getDate();
-  const daysInM  = new Date(curY,curM+1,0).getDate();
-
-  for (let i=startDow-1; i>=0; i--)
-    grid.appendChild(makeCell(new Date(curY,curM-1,prevDim-i), todayS, nat, sch, true));
-  for (let d=1; d<=daysInM; d++)
-    grid.appendChild(makeCell(new Date(curY,curM,d), todayS, nat, sch, false));
-  const filled=grid.children.length-7;
-  const rem=(7-(filled%7))%7;
-  for (let d=1; d<=rem; d++)
-    grid.appendChild(makeCell(new Date(curY,curM+1,d), todayS, nat, sch, true));
-}
-
-function makeCell(date, todayS, nat, sch, dim) {
-  const c   = document.createElement('div');
-  const dow = date.getDay();
-  const ds  = iso(date);
-  const hasNat = !dim && nat[ds];
-  const hasSch = !dim && sch[ds];
-  let cls = 'cal-cell';
-  if (dow===0||dow===6) cls+=' wknd';
-  if (dim) cls+=' dim';
-  if (ds===todayS) cls+=' today';
-  else if (hasNat && hasSch) cls+=' both';
-  else if (hasNat) cls+=' nat-hol';
-  else if (hasSch) cls+=' sch-hol';
-  c.className = cls;
-  const dn=document.createElement('div'); dn.className='cal-dn'; dn.textContent=date.getDate(); c.appendChild(dn);
-  if (hasNat) { const t=document.createElement('span'); t.className='cal-tag national'; t.textContent=nat[ds]; t.title=nat[ds]; c.appendChild(t); }
-  if (hasSch) { [...new Set(sch[ds])].forEach(name=>{ const t=document.createElement('span'); t.className='cal-tag school'; t.textContent=name; t.title=name; c.appendChild(t); }); }
-  return c;
-}
+const MONTHS_SHORT=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+const MONTHS_NL=['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
+const DAYS_NL=['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
+let curY,curM,editingYear=false;
+function changeYear(d){curY+=d;syncNav();renderCalendar();}
+function startYearEdit(){if(editingYear)return;editingYear=true;const display=document.getElementById('year-display');const input=document.createElement('input');input.type='number';input.className='year-input';input.value=curY;input.min=1990;input.max=2100;display.replaceWith(input);input.select();function commit(){const val=parseInt(input.value);if(!isNaN(val)&&val>=1990&&val<=2100)curY=val;editingYear=false;const nd=document.createElement('div');nd.className='year-display';nd.id='year-display';nd.title='Klik op het jaar om direct in te typen';nd.textContent=curY;nd.onclick=startYearEdit;input.replaceWith(nd);syncNav();renderCalendar();}input.addEventListener('blur',commit);input.addEventListener('keydown',e=>{if(e.key==='Enter')input.blur();if(e.key==='Escape'){input.value=curY;input.blur();}});}
+function buildMonthStrip(){const strip=document.getElementById('month-strip');strip.innerHTML='';MONTHS_SHORT.forEach((m,i)=>{const btn=document.createElement('button');btn.className='month-btn'+(i===curM?' active':'');btn.textContent=m;btn.onclick=()=>{curM=i;syncNav();renderCalendar();};strip.appendChild(btn);});}
+function syncNav(){const d=document.getElementById('year-display');if(d)d.textContent=curY;document.querySelectorAll('.month-btn').forEach((b,i)=>b.classList.toggle('active',i===curM));}
+function goToday(){const t=new Date();curY=t.getFullYear();curM=t.getMonth();syncNav();renderCalendar();}
+function buildMaps(){const nat={};nationals.forEach(h=>{nat[h.date]=h.name;});const sch={};schools.forEach(s=>{let d=new Date(s.from+'T00:00:00');const end=new Date(s.to+'T00:00:00');while(d<=end){const ds=iso(d);if(!sch[ds])sch[ds]=[];sch[ds].push(s.name);d.setDate(d.getDate()+1);}});return{nat,sch};}
+function renderCalendar(){const grid=document.getElementById('cal-grid');const todayS=iso(new Date());const{nat,sch}=buildMaps();document.getElementById('cal-title').textContent=MONTHS_NL[curM]+' '+curY;grid.innerHTML='';['ma','di','wo','do','vr','za','zo'].forEach(d=>{const el=document.createElement('div');el.className='cal-dh';el.textContent=d;grid.appendChild(el);});const startDow=(new Date(curY,curM,1).getDay()+6)%7;const prevDim=new Date(curY,curM,0).getDate();const daysInM=new Date(curY,curM+1,0).getDate();for(let i=startDow-1;i>=0;i--)grid.appendChild(makeCell(new Date(curY,curM-1,prevDim-i),todayS,nat,sch,true));for(let d=1;d<=daysInM;d++)grid.appendChild(makeCell(new Date(curY,curM,d),todayS,nat,sch,false));const filled=grid.children.length-7;const rem=(7-(filled%7))%7;for(let d=1;d<=rem;d++)grid.appendChild(makeCell(new Date(curY,curM+1,d),todayS,nat,sch,true));}
+function makeCell(date,todayS,nat,sch,dim){const c=document.createElement('div');const dow=date.getDay();const ds=iso(date);const hasNat=!dim&&nat[ds];const hasSch=!dim&&sch[ds];let cls='cal-cell';if(dow===0||dow===6)cls+=' wknd';if(dim)cls+=' dim';if(ds===todayS)cls+=' today';else if(hasNat&&hasSch)cls+=' both';else if(hasNat)cls+=' nat-hol';else if(hasSch)cls+=' sch-hol';c.className=cls;const dn=document.createElement('div');dn.className='cal-dn';dn.textContent=date.getDate();c.appendChild(dn);if(hasNat){const t=document.createElement('span');t.className='cal-tag national';t.textContent=nat[ds];t.title=nat[ds];c.appendChild(t);}if(hasSch){[...new Set(sch[ds])].forEach(n=>{const t=document.createElement('span');t.className='cal-tag school';t.textContent=n;t.title=n;c.appendChild(t);});}return c;}
 
 // ══════════════════════════════════════════════════════════════════
 //  TABLES
 // ══════════════════════════════════════════════════════════════════
-function renderNationalTable() {
-  const tbody=document.getElementById('nat-tbody');
-  const empty=document.getElementById('nat-empty');
-  tbody.innerHTML='';
-  if (nationals.length===0){empty.style.display='block';return;}
-  empty.style.display='none';
-  nationals.forEach(h=>{
-    const d=new Date(h.date+'T00:00:00');
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${h.date}</td><td><span class="tag-pill national" style="margin-right:8px"> </span>${esc(h.name)}</td><td style="font-family:'DM Mono',monospace;font-size:0.68rem;color:#999">${DAYS_NL[d.getDay()]}</td><td style="text-align:right"><button class="btn danger" onclick="deleteNational(${h.row})">Verwijder</button></td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-function renderSchoolTable() {
-  const tbody=document.getElementById('sch-tbody');
-  const empty=document.getElementById('sch-empty');
-  tbody.innerHTML='';
-  if (schools.length===0){empty.style.display='block';return;}
-  empty.style.display='none';
-  schools.forEach(s=>{
-    const days=daysBetween(s.from,s.to);
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${s.from}</td><td>${s.to}</td><td><span class="tag-pill school" style="margin-right:8px"> </span>${esc(s.name)}</td><td style="font-family:'DM Mono',monospace;font-size:0.68rem;color:#999">${days}d</td><td style="text-align:right"><button class="btn danger" onclick="deleteSchool(${s.row})">Verwijder</button></td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-function updateBadges() {
-  document.getElementById('badge-national').textContent=nationals.length;
-  document.getElementById('badge-school').textContent=schools.length;
-}
+function renderNationalTable(){const tbody=document.getElementById('nat-tbody');const empty=document.getElementById('nat-empty');tbody.innerHTML='';if(nationals.length===0){empty.style.display='block';return;}empty.style.display='none';nationals.forEach(h=>{const d=new Date(h.date+'T00:00:00');const tr=document.createElement('tr');tr.innerHTML=`<td>${h.date}</td><td><span class="tag-pill national" style="margin-right:8px"> </span>${esc(h.name)}</td><td style="font-family:'DM Mono',monospace;font-size:.68rem;color:#999">${DAYS_NL[d.getDay()]}</td><td style="text-align:right"><button class="btn danger" onclick="deleteNational(${h.row})">Verwijder</button></td>`;tbody.appendChild(tr);});}
+function renderSchoolTable(){const tbody=document.getElementById('sch-tbody');const empty=document.getElementById('sch-empty');tbody.innerHTML='';if(schools.length===0){empty.style.display='block';return;}empty.style.display='none';schools.forEach(s=>{const days=daysBetween(s.from,s.to);const tr=document.createElement('tr');tr.innerHTML=`<td>${s.from}</td><td>${s.to}</td><td><span class="tag-pill school" style="margin-right:8px"> </span>${esc(s.name)}</td><td style="font-family:'DM Mono',monospace;font-size:.68rem;color:#999">${days}d</td><td style="text-align:right"><button class="btn danger" onclick="deleteSchool(${s.row})">Verwijder</button></td>`;tbody.appendChild(tr);});}
+function updateBadges(){document.getElementById('badge-national').textContent=nationals.length;document.getElementById('badge-school').textContent=schools.length;document.getElementById('badge-locaties').textContent=locations.length;document.getElementById('badge-opleidingen').textContent=opleidingen.length;document.getElementById('badge-docenten').textContent=docenten.length;}
 
 // ══════════════════════════════════════════════════════════════════
 //  UTILITIES
 // ══════════════════════════════════════════════════════════════════
-function iso(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-function daysBetween(from,to) { return Math.round((new Date(to+'T00:00:00')-new Date(from+'T00:00:00'))/86400000)+1; }
-function fmtDate(ds) { const d=new Date(ds+'T00:00:00'); return d.getDate()+' '+MONTHS_NL[d.getMonth()].slice(0,3)+' '+d.getFullYear(); }
-
-function showPage(id,el) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  if(el)el.classList.add('active');
-}
-
-function setSyncStatus(state,msg) {
-  document.getElementById('sync-dot').className='sync-dot'+(state==='busy'?' busy':state==='err'?' err':'');
-  document.getElementById('sync-text').textContent=msg;
-}
-function showBanner(type,title,body) {
-  const b=document.getElementById('alert-banner');
-  b.className='alert '+type;
-  b.innerHTML=(title?'<strong>'+esc(title)+'</strong>':'')+esc(body);
-}
-function hideBanner() { document.getElementById('alert-banner').className='alert'; }
+function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function daysBetween(from,to){return Math.round((new Date(to+'T00:00:00')-new Date(from+'T00:00:00'))/86400000)+1;}
+function fmtDate(ds){const d=new Date(ds+'T00:00:00');return d.getDate()+' '+MONTHS_NL[d.getMonth()].slice(0,3)+' '+d.getFullYear();}
+function showPage(id,el){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.sb-nav a').forEach(a=>a.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');if(el)el.classList.add('active');if(id==='settings')populateSettingsFields();}
+function setSyncStatus(state,msg){document.getElementById('sync-dot').className='sync-dot'+(state==='busy'?' busy':state==='err'?' err':'');document.getElementById('sync-text').textContent=msg;}
+function showBanner(type,title,body){const b=document.getElementById('alert-banner');b.className='alert '+type;b.innerHTML=(title?'<strong>'+esc(title)+'</strong>':'')+esc(body);}
+function hideBanner(){document.getElementById('alert-banner').className='alert';}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 let _tt;
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2800);}
@@ -813,33 +1015,15 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 // ══════════════════════════════════════════════════════════════════
 //  DEFAULT DATA
 // ══════════════════════════════════════════════════════════════════
-const DEFAULT_NATIONALS=[
-  ['2025-01-01','Nieuwjaarsdag'],['2025-04-18','Goede Vrijdag'],
-  ['2025-04-20','Eerste Paasdag'],['2025-04-21','Tweede Paasdag'],
-  ['2025-04-27','Koningsdag'],['2025-05-05','Bevrijdingsdag'],
-  ['2025-05-29','Hemelvaartsdag'],['2025-06-08','Eerste Pinksterdag'],
-  ['2025-06-09','Tweede Pinksterdag'],['2025-12-25','Eerste Kerstdag'],
-  ['2025-12-26','Tweede Kerstdag'],['2026-01-01','Nieuwjaarsdag'],
-  ['2026-04-03','Goede Vrijdag'],['2026-04-05','Eerste Paasdag'],
-  ['2026-04-06','Tweede Paasdag'],['2026-04-27','Koningsdag'],
-  ['2026-05-05','Bevrijdingsdag'],['2026-05-14','Hemelvaartsdag'],
-  ['2026-05-24','Eerste Pinksterdag'],['2026-05-25','Tweede Pinksterdag'],
-  ['2026-12-25','Eerste Kerstdag'],['2026-12-26','Tweede Kerstdag'],
-];
+const DEFAULT_NATIONALS=[['2025-01-01','Nieuwjaarsdag'],['2025-04-18','Goede Vrijdag'],['2025-04-20','Eerste Paasdag'],['2025-04-21','Tweede Paasdag'],['2025-04-27','Koningsdag'],['2025-05-05','Bevrijdingsdag'],['2025-05-29','Hemelvaartsdag'],['2025-06-08','Eerste Pinksterdag'],['2025-06-09','Tweede Pinksterdag'],['2025-12-25','Eerste Kerstdag'],['2025-12-26','Tweede Kerstdag'],['2026-01-01','Nieuwjaarsdag'],['2026-04-03','Goede Vrijdag'],['2026-04-05','Eerste Paasdag'],['2026-04-06','Tweede Paasdag'],['2026-04-27','Koningsdag'],['2026-05-05','Bevrijdingsdag'],['2026-05-14','Hemelvaartsdag'],['2026-05-24','Eerste Pinksterdag'],['2026-05-25','Tweede Pinksterdag'],['2026-12-25','Eerste Kerstdag'],['2026-12-26','Tweede Kerstdag']];
 
 // ══════════════════════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════════════════════
-const _now=new Date();
-curY=_now.getFullYear();
-curM=_now.getMonth();
-
-document.getElementById('sch-from').addEventListener('change', updateSchoolPreview);
-document.getElementById('sch-to').addEventListener('change', updateSchoolPreview);
-
-buildMonthStrip();
-renderCalendar();
-initMsal();
+const _now=new Date();curY=_now.getFullYear();curM=_now.getMonth();
+document.getElementById('sch-from').addEventListener('change',updateSchoolPreview);
+document.getElementById('sch-to').addEventListener('change',updateSchoolPreview);
+buildMonthStrip();renderCalendar();initMsal();
 </script>
 </body>
 </html>
